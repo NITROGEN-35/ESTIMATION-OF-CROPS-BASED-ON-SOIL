@@ -12,6 +12,35 @@ function formatUTCtoLocal(utcString) {
   return isNaN(date.getTime()) ? "Invalid Date" : date.toLocaleString();
 }
 
+// ================= Password SHOW/HIDEN  ================
+let eyeicon = document.getElementById("eye-icon");
+let password = document.getElementById("password");
+
+
+eyeicon.onclick = function(){
+  if(password.type == "password" ){
+    password.type = "text";
+    eyeicon.src = "eye-open.png";
+  }else{
+    password.type = "password";
+    eyeicon.src = "eye-close.png";
+  } 
+}
+
+// ================= ConfirmPassword SHOW/HIDEN =================
+let eyeconfirm = document.getElementById("eye-confirm");
+let confirmpassword = document.getElementById("confirmPassword");
+
+eyeconfirm.onclick = function(){
+  if(confirmpassword.type == "password" ){
+    confirmpassword.type = "text";
+    eyeconfirm.src = "eye-open.png";
+  }else{
+    confirmpassword.type = "password";
+    eyeconfirm.src = "eye-close.png";
+  }
+}
+
 // ================= Input Validation & Error Handling for All Forms =================
 function validateEmail(email) {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);

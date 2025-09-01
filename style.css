@@ -132,6 +132,14 @@ body {
 .form-group {
   margin-bottom: 18px;
 }
+.form-group img {
+  width: 20px;
+  height: 15px;
+  position: absolute;
+  margin-left: -30px;
+  margin-top: 15px;
+  cursor: pointer;
+}
 
 label {
   display: block;
