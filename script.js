@@ -12,34 +12,38 @@ function formatUTCtoLocal(utcString) {
   return isNaN(date.getTime()) ? "Invalid Date" : date.toLocaleString();
 }
 
-// ================= Password SHOW/HIDEN  ================
-let eyeicon = document.getElementById("eye-icon");
-let password = document.getElementById("password");
+// ================= Password SHOW/HIDEN =================
+const eyeicon = document.getElementById("eye-icon");
+const password = document.getElementById("password");
 
-
-eyeicon.onclick = function(){
-  if(password.type == "password" ){
-    password.type = "text";
-    eyeicon.src = "eye-open.png";
-  }else{
-    password.type = "password";
-    eyeicon.src = "eye-close.png";
-  } 
+if (eyeicon && password) {
+  eyeicon.onclick = function () {
+    if (password.type === "password") {
+      password.type = "text";
+      eyeicon.src = "eye-open.png";
+    } else {
+      password.type = "password";
+      eyeicon.src = "eye-close.png";
+    }
+  };
 }
 
 // ================= ConfirmPassword SHOW/HIDEN =================
-let eyeconfirm = document.getElementById("eye-confirm");
-let confirmpassword = document.getElementById("confirmPassword");
+const eyeconfirm = document.getElementById("eye-confirm");
+const confirmpassword = document.getElementById("confirmPassword");
 
-eyeconfirm.onclick = function(){
-  if(confirmpassword.type == "password" ){
-    confirmpassword.type = "text";
-    eyeconfirm.src = "eye-open.png";
-  }else{
-    confirmpassword.type = "password";
-    eyeconfirm.src = "eye-close.png";
-  }
+if (eyeconfirm && confirmpassword) {
+  eyeconfirm.onclick = function () {
+    if (confirmpassword.type === "password") {
+      confirmpassword.type = "text";
+      eyeconfirm.src = "eye-open.png";
+    } else {
+      confirmpassword.type = "password";
+      eyeconfirm.src = "eye-close.png";
+    }
+  };
 }
+
 
 // ================= Input Validation & Error Handling for All Forms =================
 function validateEmail(email) {
@@ -200,7 +204,7 @@ if (soilForm) {
           <div><small><b>Accuracy:</b> RF: ${pred.accuracies.random_forest}% | DT: ${pred.accuracies.decision_tree}% | SVM: ${pred.accuracies.svm}%</small></div>
         `;
 
-        // Save to localStorage history (⚠️ changed here to use UTC -> local conversion)
+        // Save to localStorage history 
         let history = JSON.parse(localStorage.getItem("cropHistory")) || [];
 
         history.push({
@@ -218,44 +222,40 @@ if (soilForm) {
   });
 }
 
-// Forgot Password Form
+// ================= Forgot Password Form =================
 const forgotPasswordForm = document.getElementById("forgotPasswordForm");
 if (forgotPasswordForm) {
   forgotPasswordForm.addEventListener("submit", function (e) {
     e.preventDefault();
-    const email = document.getElementById("email").value;
-    const newPassword = prompt("Enter your new password:");
-    if (!newPassword) {
-      alert("Password reset cancelled.");
+    const email = document.getElementById("email").value.trim();
+    if (!validateEmail(email)) {
+      alert("❌ Please enter a valid email.");
       return;
     }
-    if (!validatePassword(newPassword)) {
-      alert("Password must be at least 8 characters, include a number and an uppercase letter.");
-      return;
-    }
-    fetch("http://127.0.0.1:5000/reset_password", {
+
+    fetch("http://127.0.0.1:5000/forgot_password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, new_password: newPassword })
+      body: JSON.stringify({ email })
     })
-      .then((res) => {
-        if (!res.ok) throw new Error(`Network error: ${res.status}`);
-        return res.json();
-      })
-      .then((data) => {
+      .then(res => res.json())
+      .then(data => {
         if (data.error) {
           alert("❌ " + data.error);
-        } else {
-          alert("✅ Password reset successful!");
-          window.location.href = "signin.html";
+          return;
         }
+        // For dev/testing: show the link we got back
+        alert("✅ Reset link generated:\n\n" + data.reset_link + "\n\nOpen it to set a new password.");
+        // (Optional) auto-open it:
+        // window.location.href = data.reset_link;
       })
-      .catch((err) => {
-        alert("❌ Password reset failed. " + err.message);
+      .catch(err => {
+        alert("❌ Request failed: " + err.message);
         console.error(err);
       });
   });
 }
+
 
 // Reset Password Form
 const resetPasswordForm = document.getElementById("resetPasswordForm");
@@ -272,8 +272,32 @@ if (resetPasswordForm) {
       alert("Passwords do not match!");
       return;
     }
-    alert("Password updated successfully!");
-    window.location.href = "signin.html";
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    if (!token){
+      alert("Invalid or missing reset token.");
+      return; 
+    }
+
+    fetch("http://127.0.0.1:5000/reset_password", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ token, new_password: newPassword })
+})
+  .then(res => res.json())
+  .then(data => {
+    if (data.error) {
+      alert("❌ " + data.error);
+    } else {
+      alert("✅ Password reset successful!");
+      window.location.href = "signin.html";
+    }
+  })
+  .catch(err => {
+    alert("❌ Password reset failed. " + err.message);
+    console.error(err);
+  });
+
   });
 }
 
@@ -295,26 +319,23 @@ if (registerForm) {
     }
 
     fetch("http://127.0.0.1:5000/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fullName, email, password })
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error(`Network error: ${res.status}`);
-        return res.json();
-      })
-      .then((data) => {
-        if (data.error) {
-          alert("❌ " + data.error);
-        } else {
-          alert("✅ Account created successfully!");
-          window.location.href = "signin.html";
-        }
-      })
-      .catch((err) => {
-        alert("❌ Registration failed. " + err.message);
-        console.error(err);
-      });
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ fullName, email, password })
+})
+  .then((res) => res.json().then(data => ({ status: res.status, data })))
+  .then(({ status, data }) => {
+    if (status !== 200) {
+      alert("❌ " + (data.error || "Registration failed"));
+    } else {
+      alert("✅ Account created successfully!");
+      window.location.href = "signin.html";
+    }
+  })
+  .catch((err) => {
+    alert("❌ Registration failed. " + err.message);
+    console.error(err);
+  });
   });
 }
 
@@ -329,18 +350,15 @@ if (signInForm) {
     const password = document.getElementById("password").value;
 
     fetch("http://127.0.0.1:5000/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error(`Network error: ${res.status}`);
-        return res.json();
-      })
-      .then((data) => {
-        if (!data || data.error) {
-          alert("❌ login failed "+(data.error || data.message || "Unknown error"));
-          return;
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ email, password })
+})
+  .then((res) => res.json().then(data => ({ status: res.status, data })))
+  .then(({ status, data }) => {
+    if (status !== 200) {
+      alert("❌ " + (data.error || "Login failed"));
+      return;
         } else {
           alert("✅ Sign in successful!");
           localStorage.setItem("accessToken", data.access_token);

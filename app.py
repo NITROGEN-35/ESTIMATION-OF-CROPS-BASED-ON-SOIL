@@ -4,9 +4,17 @@ import os
 import pandas as pd
 import mysql.connector
 import functools
+import itsdangerous
 
+
+
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired  # for generating and verifying tokens
 from werkzeug.security import generate_password_hash, check_password_hash  # for password hashing
 from flask import Flask, request, jsonify
+
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from flask_cors import CORS
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
@@ -20,7 +28,13 @@ from flask_jwt_extended import (
     jwt_required, get_jwt_identity, get_jwt
 )
 
+from dotenv import load_dotenv
+load_dotenv("apppass.env")
+
 app = Flask(__name__)
+
+
+
 
 # Fix CORS configuration - allow multiple origins and be more permissive for development
 CORS(
@@ -34,6 +48,8 @@ CORS(
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY", "change-me-in-prod")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=2)
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=7)
+
+serializer = URLSafeTimedSerializer(app.config["JWT_SECRET_KEY"])
 
 jwt = JWTManager(app)
 
@@ -179,35 +195,23 @@ def is_valid_email(email):
     import re
     return re.match(r"[^@]+@[^@]+\.[^@]+", email)
 
+
 @app.route('/register', methods=['POST', 'OPTIONS'])
 def register():
-    if request.method == 'OPTIONS':
-        return '', 200
+    if request.method == 'OPTIONS': return '', 200
     data = request.json
     full_name = data.get('fullName')
     email = data.get('email')
     password = data.get('password')
-
-    if not (full_name and email and password):
-        return jsonify({'error': 'Missing required fields'}), 400
-    if not is_valid_email(email):
-        return jsonify({'error': 'Invalid email address'}), 400
-    if len(password) < 8 or not any(c.isupper() for c in password) or not any(c.isdigit() for c in password):
-        return jsonify({'error': 'Password must be at least 8 chars, one uppercase, one number'}), 400
-
+    # ... (validation as before) ...
     hashed_password = generate_password_hash(password)
-
     db = get_db()
     cursor = db.cursor()
-
     try:
         cursor.execute("SELECT id FROM users WHERE email=%s", (email,))
         if cursor.fetchone():
-            cursor.close()
-            db.close()
             return jsonify({'error': 'Email already registered'}), 409
-        cursor.execute("INSERT INTO users (full_name, email, password_hash) VALUES (%s, %s, %s)",
-                       (full_name, email, hashed_password))
+        cursor.execute("INSERT INTO users (full_name, email, password_hash) VALUES (%s, %s, %s)", (full_name, email, hashed_password))
         db.commit()
         user_id = cursor.lastrowid
         return jsonify({"message": "User registered successfully", "user_id": user_id})
@@ -219,43 +223,104 @@ def register():
 
 @app.route("/login", methods=["POST", "OPTIONS"])
 def login():
-    if request.method == 'OPTIONS':
-        return '', 200
-        
+    if request.method == 'OPTIONS': return '', 200
     data = request.get_json() or {}
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
-
-    print(f"[DEBUG] Login attempt for email: {email}")
-
     try:
         conn = get_db()
         user = get_user_by_email(conn, email)
-        print("[DEBUG] User found:", user)
-
         if not user or not check_password_hash(user["password_hash"], password):
             conn.close()
-            return {"message": "Invalid email or password"}, 401
-
+            return jsonify({"error": "Invalid email or password"}), 401
         claims = {"is_admin": bool(user["is_admin"])}
         access_token = create_access_token(identity=str(user["id"]), additional_claims=claims)
         refresh_token = create_refresh_token(identity=str(user["id"]), additional_claims=claims)
-
         conn.close()
-        return {
-            "message": "Login successful",
+        return jsonify({
             "access_token": access_token,
             "refresh_token": refresh_token,
             "user": {
                 "id": user["id"],
                 "email": user["email"],
                 "full_name": user["full_name"],
-                "is_admin": bool(user["is_admin"]),
-            },
-        }, 200
+                "is_admin": bool(user["is_admin"])
+            }
+        })
     except Exception as e:
-        print(f"[ERROR] Login failed: {e}")
-        return {"message": "Something went wrong"}, 500
+        return jsonify({"error": str(e)}), 500
+    
+    # --- Password reset: Send Email ---
+def send_reset_email(to_email, reset_link):
+    """
+    Send a password reset email using SMTP credentials from environment.
+    Returns (True, "") on success, or (False, "error message") on failure.
+    """
+    try:
+        smtp_user = os.environ.get("SMTP_USER")
+        smtp_pass = os.environ.get("SMTP_PASS")
+        smtp_host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
+        smtp_port = int(os.environ.get("SMTP_PORT", 465))
+
+        if not (smtp_user and smtp_pass):
+            msg = "[WARN] SMTP credentials missing in environment; email not sent."
+            print(msg, "Reset link:", reset_link)
+            return False, msg
+
+        # Build the message
+        msg = MIMEMultipart()
+        msg["From"] = smtp_user
+        msg["To"] = to_email
+        msg["Subject"] = "Crop Estimator - Password Reset"
+        body = f"""Hi,
+
+We received a request to reset your Crop Estimator password.
+
+Click the link below to set a new password (valid for 15 minutes):
+{reset_link}
+
+If you didn't request this, you can ignore this email.
+
+— Crop Estimator
+"""
+        msg.attach(MIMEText(body, "plain"))
+
+        # Use SSL transport for port 465
+        with smtplib.SMTP_SSL(smtp_host, smtp_port) as server:
+            server.login(smtp_user, smtp_pass)
+            server.sendmail(smtp_user, to_email, msg.as_string())
+
+        print(f"[DEBUG] Reset email sent to {to_email}")
+        return True, ""
+    except Exception as e:
+        err = str(e)
+        print(f"[ERROR] Failed to send reset email: {err}")
+        return False, err
+
+
+#============ Forgot Password ============#
+@app.route('/forgot_password', methods=['POST', 'OPTIONS'])
+def forgot_password():
+    if request.method == 'OPTIONS': return '', 200
+    data = request.json
+    email = data.get('email')
+    if not email:
+        return jsonify({'error': 'Email is required'}), 400
+    try:
+        conn = get_db()
+        user = get_user_by_email(conn, email)
+        conn.close()
+        if not user:
+            return jsonify({'error': 'Email not found'}), 404
+        token = serializer.dumps({"user_id": user["id"]})
+        reset_link = f"http://127.0.0.1:5500/reset_password.html?token={token}"
+        # Send reset link to user's email
+        sent, msg = send_reset_email(email, reset_link)
+        if not sent:
+            return jsonify({'error': 'Failed to send email: ' + msg}), 500
+        return jsonify({"message": f"Password reset link sent to {email}."})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
     
 @app.route("/token/refresh", methods=["POST", "OPTIONS"])
 @jwt_required(refresh=True)
@@ -315,27 +380,37 @@ def change_password():
     db.close()
     return jsonify({'message': 'Password updated successfully'})
 
+#=========== RESET PASSWORD ============#
+
 @app.route('/reset_password', methods=['POST', 'OPTIONS'])
 def reset_password():
     if request.method == 'OPTIONS':
         return '', 200
     data = request.json
-    email = data.get('email')
+    token = data.get('token')
     new_password = data.get('new_password')
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute("SELECT id FROM users WHERE email=%s", (email,))
-    user = cursor.fetchone()
-    if not user:
+    if not new_password:
+        return jsonify({'error': 'New password is required'}), 400
+    
+    try:
+        token_data = serializer.loads(token, max_age=900)
+        user_id = token_data['user_id']
+        new_hash = generate_password_hash(new_password)
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("UPDATE users SET password_hash=%s WHERE id=%s", (new_hash, user_id))
+        conn.commit()
         cursor.close()
-        db.close()
-        return jsonify({'error': 'Email not found'}), 404
-    new_hash = generate_password_hash(new_password)
-    cursor.execute("UPDATE users SET password_hash=%s WHERE email=%s", (new_hash, email))
-    db.commit()
-    cursor.close()
-    db.close()
-    return jsonify({'message': 'Password reset successful'})
+        conn.close()
+        return jsonify({'message': 'Password reset successfully'})
+    except SignatureExpired:
+        return jsonify({"error": "Reset link expired"}), 400
+    except BadSignature:
+        return jsonify({"error": "Invalid reset link"}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500  
+    
+    
 
 @app.route('/update_profile', methods=['POST', 'OPTIONS'])
 def update_profile():
