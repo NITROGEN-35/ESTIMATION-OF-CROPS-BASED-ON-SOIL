@@ -6,8 +6,6 @@ import mysql.connector
 import functools
 import itsdangerous
 
-
-
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired  # for generating and verifying tokens
 from werkzeug.security import generate_password_hash, check_password_hash  # for password hashing
 from flask import Flask, request, jsonify
@@ -17,11 +15,14 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from flask_cors import CORS
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier ,GradientBoostingClassifier,AdaBoostClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
-
 from datetime import timedelta
 from flask_jwt_extended import (
     JWTManager, create_access_token, create_refresh_token,
@@ -88,108 +89,133 @@ y = df['label']
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+
 rf_model = RandomForestClassifier()
 dt_model = DecisionTreeClassifier()
 svm_model = SVC()
+lr_model = LogisticRegression()
+nb_model = GaussianNB()
+knn_model = KNeighborsClassifier()
+gb_model = GradientBoostingClassifier()
+ada_model = AdaBoostClassifier()
 
 rf_model.fit(X_train, y_train)
 dt_model.fit(X_train, y_train)
 svm_model.fit(X_train, y_train)
+lr_model.fit(X_train, y_train)
+nb_model.fit(X_train, y_train)
+knn_model.fit(X_train, y_train)
+gb_model.fit(X_train, y_train)
+ada_model.fit(X_train, y_train)
 
 # === Accuracy calculation (for reference) ===
+
 rf_acc = round(accuracy_score(y_test, rf_model.predict(X_test)) * 100, 2)
 dt_acc = round(accuracy_score(y_test, dt_model.predict(X_test)) * 100, 2)
 svm_acc = round(accuracy_score(y_test, svm_model.predict(X_test)) * 100, 2)
+lr_acc = round(accuracy_score(y_test, lr_model.predict(X_test)) * 100, 2)
+nb_acc = round(accuracy_score(y_test, nb_model.predict(X_test)) * 100, 2)
+knn_acc = round(accuracy_score(y_test, knn_model.predict(X_test)) * 100, 2)
+gb_acc = round(accuracy_score(y_test, gb_model.predict(X_test)) * 100, 2)
+ada_acc = round(accuracy_score(y_test, ada_model.predict(X_test)) * 100 , 2)
 
-@app.route('/')
-def home():
-    return "Crop Predictor API is running ✅"
+print("[MODEL ACCURACIES] RF:", rf_acc, "DT:", dt_acc, "SVM:", svm_acc, "LR:", lr_acc, "NB:", nb_acc, "KNN:", knn_acc, "GB:", gb_acc, "ADA:", ada_acc)
 
-# Add explicit OPTIONS handling for all routes
-@app.before_request
-def handle_options():
-    if request.method == "OPTIONS":
-        response = jsonify({})
-        response.headers.add("Access-Control-Allow-Origin", "*")
-        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization")
-        response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
-        return response
-
+#======Update /predict endpoint=======#
 @app.route('/predict', methods=['POST', 'OPTIONS'])
 def predict():
     if request.method == 'OPTIONS':
         return '', 200
-        
-    data = request.json
-    user_id = data.get("user_id")
-    print("[DEBUG] Received JSON:", data)
 
+    data = request.json or {}
+    # required fields validation
+    req = ['N','P','K','temperature','humidity','ph','rainfall']
+    for r in req:
+        if r not in data:
+            return jsonify({"error": f"Missing field: {r}"}), 400
     try:
-        # Create dataframe for prediction
-        input_data = pd.DataFrame([[
-            data['N'],
-            data['P'],
-            data['K'],
-            data['temperature'],
-            data['humidity'],
-            data['ph'],
-            data['rainfall']
-        ]], columns=X.columns)
+        # Prepare input
+        input_df = pd.DataFrame([[
 
-        # Predict using all 3 models
-        rf_result = rf_model.predict(input_data)[0]
-        dt_result = dt_model.predict(input_data)[0]
-        svm_result = svm_model.predict(input_data)[0]
+           float(data['N']), float(data['P']), float(data['K']),
+           float(data['temperature']), float(data['humidity']),
+           float(data['ph']), float(data['rainfall'])
+       ]], columns=X.columns)
 
-        # Accuracy dictionary
+        input_scaled = scaler.transform(input_df)
+       # Predictions
+        predictions = {
+           "random_forest": rf_model.predict(input_scaled)[0],
+           "decision_tree": dt_model.predict(input_scaled)[0],
+           "svm": svm_model.predict(input_scaled)[0],
+           "logistic_regression": lr_model.predict(input_scaled)[0],
+           "naive_bayes": nb_model.predict(input_scaled)[0],
+            "knn": knn_model.predict(input_scaled)[0],
+            "gradient_boost": gb_model.predict(input_scaled)[0],
+            "adaboost": ada_model.predict(input_scaled)[0]
+        }
         accuracies = {
             "random_forest": rf_acc,
             "decision_tree": dt_acc,
-            "svm": svm_acc
-        }
-
-        predictions = {
-            "random_forest": rf_result,
-            "decision_tree": dt_result,
-            "svm": svm_result
-        }
-
-        # Select best crop based on best model accuracy
+            "svm": svm_acc,
+            "logistic_regression": lr_acc,
+            "naive_bayes": nb_acc,
+            "knn": knn_acc,
+            "gradient_boost": gb_acc,
+            "adaboost": ada_acc}
         best_model = max(accuracies, key=accuracies.get)
         best_crop = predictions[best_model]
+        # Persist to DB if user_id provided (extend columns)
+        user_id = data.get("user_id")
+        if user_id:
+            try:
+                db = get_db()
+                cursor = db.cursor()
+                cursor.execute("""
+                    INSERT INTO predictions
+                    (user_id, nitrogen, phosphorus, potassium, temperature, humidity, ph, rainfall,
+                     predicted_crop, rf_crop, dt_crop, svm_crop, lr_crop, knn_crop, nb_crop, gb_crop, ada_crop, best_model)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                """, (
+                    user_id,
+                    float(data['N']), float(data['P']), float(data['K']),
+                    float(data['temperature']), float(data['humidity']),
+                    float(data['ph']), float(data['rainfall']),
+                    best_crop,
+                    predictions['random_forest'], predictions['decision_tree'], predictions['svm'],
+                    predictions['logistic_regression'], predictions['knn'], predictions['naive_bayes'],
+                    predictions['gradient_boost'], predictions['adaboost'],
+                    best_model
+                ))
+                db.commit()
+                cursor.close()
+                db.close()
+            except Exception as e:
+                # Warn but continue returning prediction
+                print("[WARN] failed to save prediction:", e)
 
-        # Store in database
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute("""
-            INSERT INTO predictions 
-            (user_id, nitrogen, phosphorus, potassium, temperature, humidity, ph, rainfall, predicted_crop, rf_crop, dt_crop, svm_crop, best_model)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, (
-            user_id,
-            data['N'], data['P'], data['K'],
-            data['temperature'], data['humidity'],
-            data['ph'], data['rainfall'],
-            best_crop,
-            rf_result,
-            dt_result,
-            svm_result,
-            best_model
-        ))
-        db.commit()
-        cursor.close()
-        db.close()
-
+        # Return results
         return jsonify({
-            "random_forest": rf_result,
-            "decision_tree": dt_result,
-            "svm": svm_result,
+            "predictions": predictions,
             "accuracies": accuracies,
+            "best_model": best_model,
+            "best_crop": best_crop,
             "recommended_crop": best_crop
         })
 
     except Exception as e:
+        print("[ERROR] /predict failed:", e)
         return jsonify({"error": str(e)}), 400
+       
+
+
+@app.route('/')
+def home():
+    return "Crop Predictor API is running ✅"
 
 def is_valid_email(email):
     import re

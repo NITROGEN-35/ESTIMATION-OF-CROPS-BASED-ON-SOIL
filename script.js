@@ -192,29 +192,34 @@ if (soilForm) {
       method: "POST",
       body: JSON.stringify(data),
     })
-      .then((res) => res.json())
-      .then((pred) => {
-        const results = document.getElementById("results");
-        results.innerHTML = `
-          <h3>Recommended Crops</h3>
-          <div class="result-box"><b>🌾 Random Forest:</b> ${pred.random_forest}</div>
-          <div class="result-box"><b>🌳 Decision Tree:</b> ${pred.decision_tree}</div>
-          <div class="result-box"><b>🧠 SVM:</b> ${pred.svm}</div>
-          <br/>
-          <div><small><b>Accuracy:</b> RF: ${pred.accuracies.random_forest}% | DT: ${pred.accuracies.decision_tree}% | SVM: ${pred.accuracies.svm}%</small></div>
-        `;
+      .then(res => res.json())
+.then((resp) => {
+  const pred = resp;
+  const results = document.getElementById("results");
+  results.innerHTML = `
+    <h3>Recommended Crops</h3>
+    <table class="results-table">
+      <thead><tr><th>Model</th><th>Prediction</th><th>Accuracy (%)</th></tr></thead>
+      <tbody>
+        <tr><td>🌾 Random Forest</td><td>${pred.predictions.random_forest}</td><td>${pred.accuracies.random_forest}</td></tr>
+        <tr><td>🌳 Decision Tree</td><td>${pred.predictions.decision_tree}</td><td>${pred.accuracies.decision_tree}</td></tr>
+        <tr><td>🧠 SVM</td><td>${pred.predictions.svm}</td><td>${pred.accuracies.svm}</td></tr>
+        <tr><td>📈 Logistic Regression</td><td>${pred.predictions.logistic_regression}</td><td>${pred.accuracies.logistic_regression}</td></tr>
+        <tr><td>👥 KNN</td><td>${pred.predictions.knn}</td><td>${pred.accuracies.knn}</td></tr>
+        <tr><td>🧮 Naive Bayes</td><td>${pred.predictions.naive_bayes}</td><td>${pred.accuracies.naive_bayes}</td></tr>
+        <tr><td>⚡ Gradient Boost</td><td>${pred.predictions.gradient_boost}</td><td>${pred.accuracies.gradient_boost}</td></tr>
+        <tr><td>🔰 AdaBoost</td><td>${pred.predictions.adaboost}</td><td>${pred.accuracies.adaboost}</td></tr>
+      </tbody>
+    </table>
+    <div class="best-box"><strong>Recommended (best model: ${pred.best_model}):</strong> ${pred.recommended_crop}</div>
+  `;
 
-        // Save to localStorage history 
-        let history = JSON.parse(localStorage.getItem("cropHistory")) || [];
+  // Save history (preserve old behavior)
+  let history = JSON.parse(localStorage.getItem("cropHistory")) || [];
+  history.push({ date: new Date().toISOString(), inputs: data, predictions: pred });
+  localStorage.setItem("cropHistory", JSON.stringify(history));
+})
 
-        history.push({
-          date: new Date().toISOString(),  // store UTC
-          inputs: data,
-          predictions: pred,
-        });
-
-        localStorage.setItem("cropHistory", JSON.stringify(history));
-      })
       .catch((err) => {
         alert("❌ Prediction failed: " + err.message);
         console.error(err);
@@ -366,8 +371,8 @@ if (signInForm) {
           localStorage.setItem("user_email", data.user.email);
           localStorage.setItem("full_name", data.user.full_name);
           localStorage.setItem("is_admin", data.user.is_admin ? "1" : "0");
-          localStorage.setItem("user_id", data.user.id); // add this
-          localStorage.setItem("isLoggedIn", "true"); // add this
+          localStorage.setItem("user_id", data.user.id);
+          localStorage.setItem("isLoggedIn", "true");
           window.location.href = "dashboard.html";
         }
       })

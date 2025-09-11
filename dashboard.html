@@ -18,6 +18,9 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
     />
     <link rel="stylesheet" href="style.css" />
+
+    <!-- Chart.js CDN (add once) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
   <body>
     <!-- Top Navigation -->
@@ -81,6 +84,71 @@
           </div>
           <button class="submit-btn" type="submit">Estimate Crops</button>
         </form>
+
+        <!-- ====== Research Dashboard: Model Comparison & Soil Visuals ====== -->
+        <div id="research-dashboard" style="margin-top: 20px">
+          <h3>Model Comparison (votes)</h3>
+          <canvas id="modelComparisonChart" width="600" height="250"></canvas>
+
+          <h3 style="margin-top: 12px">Majority-vote Recommendation</h3>
+          <div
+            id="majorityResult"
+            style="font-size: 1.25rem; font-weight: 700; padding: 8px 0"
+          >
+            —
+          </div>
+
+          <h3 style="margin-top: 12px">Soil Data (input)</h3>
+          <canvas id="soilDataChart" width="600" height="250"></canvas>
+
+          <h4 style="margin-top: 12px">Raw Model Predictions</h4>
+          <table
+            id="predictionsTable"
+            class="pred-table"
+            style="width: 100%; border-collapse: collapse; margin-top: 6px"
+          >
+            <thead>
+              <tr>
+                <th style="text-align: left; padding: 6px">Model</th>
+                <th style="text-align: left; padding: 6px">Predicted Crop</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <!-- Best model highlight card (inserted) -->
+        <div
+          id="best-model-card"
+          style="margin: 18px 0; display: flex; align-items: center; gap: 18px"
+        >
+          <div id="best-model-badge" class="best-badge">
+            <span id="best-percent">--%</span>
+          </div>
+
+          <div style="flex: 1">
+            <div style="font-size: 18px; font-weight: 700; color: #2b7a4b">
+              Top recommendation
+            </div>
+            <div
+              id="best-model-name"
+              style="font-size: 20px; font-weight: 800; margin-top: 6px"
+            >
+              —
+            </div>
+            <div
+              id="best-model-sub"
+              style="color: #555; margin-top: 6px; font-size: 14px"
+            >
+              Model: <span id="best-model-source">—</span>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; align-items: center">
+            <button id="moreInfoBtn" class="btn small">More info</button>
+            <button id="compareBtn" class="btn small secondary">Compare</button>
+          </div>
+        </div>
+        <!-- end Best model highlight card -->
       </div>
 
       <div class="results" id="results">
@@ -88,7 +156,7 @@
         <!-- Results will be injected here -->
       </div>
     </div>
-
+    <script src="chart.js"></script>
     <script src="script.js"></script>
   </body>
 </html>

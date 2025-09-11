@@ -132,6 +132,7 @@ body {
 .form-group {
   margin-bottom: 18px;
 }
+
 .form-group img {
   width: 20px;
   height: 15px;
@@ -233,11 +234,9 @@ select:focus {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: linear-gradient(
-    135deg,
-    var(--primary) 0%,
-    var(--primary-dark) 100%
-  );
+  background: linear-gradient(135deg,
+      var(--primary) 0%,
+      var(--primary-dark) 100%);
   overflow: auto;
 }
 
@@ -369,10 +368,13 @@ select:focus {
   }
 
   .nav-btn {
-    width: 100%; /* Full width */
+    width: 100%;
+    /* Full width */
     text-align: center;
-    font-size: 14px; /* Smaller font */
-    padding: 8px 12px; /* Adjust padding */
+    font-size: 14px;
+    /* Smaller font */
+    padding: 8px 12px;
+    /* Adjust padding */
   }
 }
 
@@ -549,3 +551,80 @@ button.clear-btn:hover {
   background-color: #0f9d58;
 }
 
+/* ================= Results Table Styling ================= */
+.results-table {
+  border-collapse: separate;
+  /* allow spacing */
+  border-spacing: 0 12px;
+  /* add vertical space between rows */
+  width: 100%;
+  margin-top: 15px;
+}
+
+.results-table th,
+.results-table td {
+  padding: 10px 16px;
+  /* space inside cells */
+  text-align: center;
+  border: 1px solid var(--light-gray);
+  border-radius: 6px;
+  background: #fff;
+}
+
+/* Make model names bold */
+.results-table td:first-child {
+  font-weight: bold;
+  color: black;
+  /* optional: darker green for emphasis */
+}
+
+
+.results-table thead th {
+  background: #f1f8e9;
+  /* light green header */
+  font-weight: bold;
+  color: var(--primary-dark);
+}
+
+.results-table tbody tr {
+  background: #ffffff;
+  box-shadow: var(--box-shadow);
+}
+
+/* Best model badge */
+.best-badge{
+  width:96px;
+  height:96px;
+  border-radius:50%;
+  background: linear-gradient(180deg,#eaf8ee,#d7f1dd);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow: 0 6px 18px rgba(43,122,75,0.12);
+  border: 4px solid #2b7a4b33;
+}
+#best-percent{
+  font-size:20px;
+  font-weight:800;
+  color:#1b6a3e;
+}
+
+/* Buttons (light) */
+.btn {
+  background:#2b7a4b;
+  color:#fff;
+  border:0;
+  padding:8px 12px;
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:600;
+}
+.btn.small{ padding:6px 10px; font-size:14px; border-radius:7px; }
+.btn.secondary{
+  background:transparent;
+  color:#2b7a4b;
+  border:1px solid #2b7a4b33;
+}
+
+/* Hidden helper */
+.hidden { display:none !important; }
