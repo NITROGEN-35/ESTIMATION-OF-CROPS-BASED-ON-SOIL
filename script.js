@@ -1,125 +1,61 @@
+// ================= Utility =================
 function formatUTCtoLocal(utcString) {
   if (!utcString) return "";
-  // Handle both ISO and MySQL datetime formats
-  let dateString = utcString;
-  if (!dateString.includes('T')) {
-    dateString = dateString.replace(' ', 'T');
-  }
-  if (!dateString.endsWith('Z')) {
-    dateString += 'Z';
-  }
+  let dateString = utcString.includes("T")
+    ? utcString
+    : utcString.replace(" ", "T") + "Z";
   const date = new Date(dateString);
   return isNaN(date.getTime()) ? "Invalid Date" : date.toLocaleString();
 }
 
-// ================= Password SHOW/HIDEN =================
-const eyeicon = document.getElementById("eye-icon");
-const password = document.getElementById("password");
+// ================= Input Validation =================
 
-if (eyeicon && password) {
-  eyeicon.onclick = function () {
-    if (password.type === "password") {
-      password.type = "text";
-      eyeicon.src = "eye-open.png";
-    } else {
-      password.type = "password";
-      eyeicon.src = "eye-close.png";
+
+const THRESHOLDS = {
+  N: { min: 0, max: 140 },
+  P: { min: 0, max: 145 },
+  K: { min: 0, max: 205 },
+  temperature: { min: 5, max: 45 },
+  humidity: { min: 20, max: 100 },
+  ph: { min: 3.5, max: 9.0 },
+  rainfall: { min: 20, max: 300 }
+};
+
+function validateSoilInput(data) {
+  const errors = [];
+  const warnings = [];
+
+  for (const key in THRESHOLDS) {
+    const value = Number(data[key]);
+    const { min, max } = THRESHOLDS[key];
+
+
+    if (isNaN(value)) {
+      errors.push(`${key} is not a number`);
+      continue;
     }
-  };
-}
-
-// ================= ConfirmPassword SHOW/HIDEN =================
-const eyeconfirm = document.getElementById("eye-confirm");
-const confirmpassword = document.getElementById("confirmPassword");
-
-if (eyeconfirm && confirmpassword) {
-  eyeconfirm.onclick = function () {
-    if (confirmpassword.type === "password") {
-      confirmpassword.type = "text";
-      eyeconfirm.src = "eye-open.png";
-    } else {
-      confirmpassword.type = "password";
-      eyeconfirm.src = "eye-close.png";
-    }
-  };
-}
-
-
-// ================= Input Validation & Error Handling for All Forms =================
-function validateEmail(email) {
-  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
-}
-function validatePassword(password) {
-  return password.length >= 8 && /[A-Z]/.test(password) && /[0-9]/.test(password);
-}
-function validateSoilInputs(data) {
-  return (
-    data.N >= 0 && data.P >= 0 && data.K >= 0 &&
-    data.temperature >= -20 && data.temperature <= 60 &&
-    data.humidity >= 0 && data.humidity <= 100 &&
-    data.ph >= 0 && data.ph <= 14 &&
-    data.rainfall >= 0
+    
+    if (value < min || value > max) {
+  warnings.push(
+    `${key} is outside the recommended range (${min}–${max})`
   );
 }
-
-// === JWT Fetch Wrapper with Robust Error Handling ===
-async function apiFetch(url, options = {}) {
-  const token = localStorage.getItem("accessToken");
-  const headers = Object.assign(
-    { "Content-Type": "application/json" },
-    options.headers || {},
-    token ? { Authorization: `Bearer ${token}` } : {}
-  );
-
-  try {
-    let res = await fetch(url, { ...options, headers });
-    if (res.status === 401) {
-      const refreshed = await tryRefresh();
-      if (refreshed) {
-        const retryHeaders = Object.assign(
-          { "Content-Type": "application/json" },
-          options.headers || {},
-          { Authorization: `Bearer ${localStorage.getItem("accessToken")}` }
+ else {
+      // warning if close to boundary (10%)
+      const range = max - min;
+      if (value < min + range * 0.1 || value > max - range * 0.1) {
+        warnings.push(
+          `${key} is near its acceptable limit`
         );
-        res = await fetch(url, { ...options, headers: retryHeaders });
       }
     }
-    if (!res.ok) {
-      let errorText = '';
-      try {
-        errorText = await res.text();
-      } catch (e) {
-        errorText = '';
-      }
-      throw new Error(`Network/API error: ${res.status} ${res.statusText}${errorText ? ' - ' + errorText : ''}`);
-    }
-    return res;
-  } catch (err) {
-    // Network or fetch error
-    alert("❌ Request failed: " + err.message);
-    throw err; // Also throw so that the .catch in the UI can handle it
   }
-}
 
-async function tryRefresh() {
-  const rt = localStorage.getItem("refreshToken");
-  if (!rt) return false;
-  const res = await fetch("http://127.0.0.1:5000/token/refresh", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${rt}` },
-  });
-  if (!res.ok) return false;
-  const data = await res.json();
-  if (data.access_token) {
-    localStorage.setItem("accessToken", data.access_token);
-    return true;
-  }
-  return false;
+  return { errors, warnings };
 }
 
 
-
-// Menu functionality
+// ================= Menu Functionality =================
 const menuIcon = document.getElementById("menu-icon");
 const sidebar = document.getElementById("sidebar");
 const overlay = document.getElementById("overlay");
@@ -131,10 +67,9 @@ function toggleMenu() {
     sidebar.classList.toggle("hidden");
     main.classList.toggle("expanded");
 
-    // For mobile, also toggle active class and overlay
-    if (window.innerWidth <= 768) {
+    if (window.innerWidth <= 768 && overlay) {
       sidebar.classList.toggle("active");
-      if (overlay) overlay.classList.toggle("active");
+      overlay.classList.toggle("active");
     }
   }
 }
@@ -145,7 +80,6 @@ function closeMenu() {
     sidebar.classList.remove("active");
     overlay.classList.remove("active");
 
-    // For desktop, ensure proper classes
     if (window.innerWidth > 768 && main) {
       sidebar.classList.add("hidden");
       main.classList.add("expanded");
@@ -153,32 +87,22 @@ function closeMenu() {
   }
 }
 
-// Menu icon click
-if (menuIcon) {
-  menuIcon.addEventListener("click", toggleMenu);
-}
-
-// Overlay click to close menu
-if (overlay) {
-  overlay.addEventListener("click", closeMenu);
-}
-
-// Close menu when clicking on sidebar links (mobile)
+if (menuIcon) menuIcon.addEventListener("click", toggleMenu);
+if (overlay) overlay.addEventListener("click", closeMenu);
 if (sidebar) {
-  const sidebarLinks = sidebar.querySelectorAll("a");
-  sidebarLinks.forEach((link) => {
+  sidebar.querySelectorAll("a").forEach((link) => {
     link.addEventListener("click", closeMenu);
   });
 }
 
-// ML Crop Estimation using Flask API
+// ================= Crop Estimation =================
 const soilForm = document.getElementById("soilForm");
+
 if (soilForm) {
   soilForm.addEventListener("submit", function (e) {
     e.preventDefault();
-    const user_id = localStorage.getItem("user_id");
+
     const data = {
-      user_id: user_id,
       N: parseFloat(document.getElementById("N").value),
       P: parseFloat(document.getElementById("P").value),
       K: parseFloat(document.getElementById("K").value),
@@ -188,38 +112,71 @@ if (soilForm) {
       rainfall: parseFloat(document.getElementById("rainfall").value),
     };
 
-    apiFetch("http://127.0.0.1:5000/predict", {
+    const { errors, warnings } = validateSoilInput(data);
+
+if (errors.length) {
+  alert(errors.join("\n"));
+  return; // ⛔ HARD STOP — Phase 2 compliant
+}
+
+if (warnings.length) {
+  console.warn(warnings.join("\n"));
+}
+
+
+    
+
+    fetch("http://127.0.0.1:5000/predict", {
       method: "POST",
+      headers: { "Content-Type": "application/json" ,
+        "X-User-Id": "1"
+      },
       body: JSON.stringify(data),
     })
-      .then(res => res.json())
-.then((resp) => {
-  const pred = resp;
-  const results = document.getElementById("results");
-  results.innerHTML = `
-    <h3>Recommended Crops</h3>
-    <table class="results-table">
-      <thead><tr><th>Model</th><th>Prediction</th><th>Accuracy (%)</th></tr></thead>
-      <tbody>
-        <tr><td>🌾 Random Forest</td><td>${pred.predictions.random_forest}</td><td>${pred.accuracies.random_forest}</td></tr>
-        <tr><td>🌳 Decision Tree</td><td>${pred.predictions.decision_tree}</td><td>${pred.accuracies.decision_tree}</td></tr>
-        <tr><td>🧠 SVM</td><td>${pred.predictions.svm}</td><td>${pred.accuracies.svm}</td></tr>
-        <tr><td>📈 Logistic Regression</td><td>${pred.predictions.logistic_regression}</td><td>${pred.accuracies.logistic_regression}</td></tr>
-        <tr><td>👥 KNN</td><td>${pred.predictions.knn}</td><td>${pred.accuracies.knn}</td></tr>
-        <tr><td>🧮 Naive Bayes</td><td>${pred.predictions.naive_bayes}</td><td>${pred.accuracies.naive_bayes}</td></tr>
-        <tr><td>⚡ Gradient Boost</td><td>${pred.predictions.gradient_boost}</td><td>${pred.accuracies.gradient_boost}</td></tr>
-        <tr><td>🔰 AdaBoost</td><td>${pred.predictions.adaboost}</td><td>${pred.accuracies.adaboost}</td></tr>
-      </tbody>
-    </table>
-    <div class="best-box"><strong>Recommended (best model: ${pred.best_model}):</strong> ${pred.recommended_crop}</div>
-  `;
+      .then((res) => {
+        if (!res.ok) throw new Error("Prediction request failed");
+        return res.json();
+      })
+      .then((pred) => {
+        const results = document.getElementById("results");
 
-  // Save history (preserve old behavior)
-  let history = JSON.parse(localStorage.getItem("cropHistory")) || [];
-  history.push({ date: new Date().toISOString(), inputs: data, predictions: pred });
-  localStorage.setItem("cropHistory", JSON.stringify(history));
-})
+        results.innerHTML = `
+          <h3>Recommended Crops</h3>
+          <table class="results-table">
+            <thead>
+              <tr>
+                <th>Model</th>
+                <th>Prediction</th>
+                <th>Accuracy (%)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Random Forest</td><td>${pred.predictions.random_forest}</td><td>${pred.accuracies.random_forest}</td></tr>
+              <tr><td>Decision Tree</td><td>${pred.predictions.decision_tree}</td><td>${pred.accuracies.decision_tree}</td></tr>
+              <tr><td>SVM</td><td>${pred.predictions.svm}</td><td>${pred.accuracies.svm}</td></tr>
+              <tr><td>Logistic Regression</td><td>${pred.predictions.logistic_regression}</td><td>${pred.accuracies.logistic_regression}</td></tr>
+              <tr><td>KNN</td><td>${pred.predictions.knn}</td><td>${pred.accuracies.knn}</td></tr>
+              <tr><td>Naive Bayes</td><td>${pred.predictions.naive_bayes}</td><td>${pred.accuracies.naive_bayes}</td></tr>
+              <tr><td>Gradient Boost</td><td>${pred.predictions.gradient_boost}</td><td>${pred.accuracies.gradient_boost}</td></tr>
+              <tr><td>AdaBoost</td><td>${pred.predictions.adaboost}</td><td>${pred.accuracies.adaboost}</td></tr>
+            </tbody>
+          </table>
 
+          <div class="best-box">
+            <strong>Recommended (Best Model: ${pred.best_model})</strong> :
+            ${pred.recommended_crop}
+          </div>
+        `;
+
+        // Local research history (NO USER, NO AUTH)
+        let history = JSON.parse(localStorage.getItem("cropHistory")) || [];
+        history.push({
+          date: new Date().toISOString(),
+          inputs: data,
+          predictions: pred,
+        });
+        localStorage.setItem("cropHistory", JSON.stringify(history));
+      })
       .catch((err) => {
         alert("❌ Prediction failed: " + err.message);
         console.error(err);
@@ -227,232 +184,18 @@ if (soilForm) {
   });
 }
 
-// ================= Forgot Password Form =================
-const forgotPasswordForm = document.getElementById("forgotPasswordForm");
-if (forgotPasswordForm) {
-  forgotPasswordForm.addEventListener("submit", function (e) {
-    e.preventDefault();
-    const email = document.getElementById("email").value.trim();
-    if (!validateEmail(email)) {
-      alert("❌ Please enter a valid email.");
-      return;
-    }
-
-    fetch("http://127.0.0.1:5000/forgot_password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email })
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) {
-          alert("❌ " + data.error);
-          return;
-        }
-        // For dev/testing: show the link we got back
-        alert("✅ Reset link generated:\n\n" + data.reset_link + "\n\nOpen it to set a new password.");
-        // (Optional) auto-open it:
-        // window.location.href = data.reset_link;
-      })
-      .catch(err => {
-        alert("❌ Request failed: " + err.message);
-        console.error(err);
-      });
-  });
-}
-
-
-// Reset Password Form
-const resetPasswordForm = document.getElementById("resetPasswordForm");
-if (resetPasswordForm) {
-  resetPasswordForm.addEventListener("submit", function (e) {
-    e.preventDefault();
-    const newPassword = document.getElementById("newPassword").value;
-    const confirmPassword = document.getElementById("confirmPassword").value;
-    if (!validatePassword(newPassword)) {
-      alert("Password must be at least 8 characters, include a number and an uppercase letter.");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      alert("Passwords do not match!");
-      return;
-    }
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    if (!token){
-      alert("Invalid or missing reset token.");
-      return; 
-    }
-
-    fetch("http://127.0.0.1:5000/reset_password", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ token, new_password: newPassword })
-})
-  .then(res => res.json())
-  .then(data => {
-    if (data.error) {
-      alert("❌ " + data.error);
-    } else {
-      alert("✅ Password reset successful!");
-      window.location.href = "signin.html";
-    }
-  })
-  .catch(err => {
-    alert("❌ Password reset failed. " + err.message);
-    console.error(err);
-  });
-
-  });
-}
-
-// ================= Register Form Logic =================
-const registerForm = document.getElementById("registerForm");
-
-if (registerForm) {
-  registerForm.addEventListener("submit", function (e) {
-    e.preventDefault();
-
-    const fullName = document.getElementById("fullName").value;
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-    const confirmPassword = document.getElementById("confirmPassword").value;
-
-    if (password !== confirmPassword) {
-      alert("❌ Passwords do not match!");
-      return;
-    }
-
-    fetch("http://127.0.0.1:5000/register", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ fullName, email, password })
-})
-  .then((res) => res.json().then(data => ({ status: res.status, data })))
-  .then(({ status, data }) => {
-    if (status !== 200) {
-      alert("❌ " + (data.error || "Registration failed"));
-    } else {
-      alert("✅ Account created successfully!");
-      window.location.href = "signin.html";
-    }
-  })
-  .catch((err) => {
-    alert("❌ Registration failed. " + err.message);
-    console.error(err);
-  });
-  });
-}
-
-// ================= Sign In Form Logic =================
-const signInForm = document.getElementById("signInForm");
-
-if (signInForm) {
-  signInForm.addEventListener("submit", function (e) {
-    e.preventDefault();
-
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-
-    fetch("http://127.0.0.1:5000/login", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ email, password })
-})
-  .then((res) => res.json().then(data => ({ status: res.status, data })))
-  .then(({ status, data }) => {
-    if (status !== 200) {
-      alert("❌ " + (data.error || "Login failed"));
-      return;
-        } else {
-          alert("✅ Sign in successful!");
-          localStorage.setItem("accessToken", data.access_token);
-          localStorage.setItem("refreshToken", data.refresh_token);
-          localStorage.setItem("user_email", data.user.email);
-          localStorage.setItem("full_name", data.user.full_name);
-          localStorage.setItem("is_admin", data.user.is_admin ? "1" : "0");
-          localStorage.setItem("user_id", data.user.id);
-          localStorage.setItem("isLoggedIn", "true");
-          window.location.href = "dashboard.html";
-        }
-      })
-      .catch((err) => {
-        alert("❌ Login failed. " + err.message);
-        console.error(err);
-      });
-  });
-}
-
-// ================= Sign Out Logic (signout.html) =================
-if (window.location.pathname.includes("admin.html")) {
-  const isLoggedIn = localStorage.getItem("isLoggedIn");
-  if (isLoggedIn === "true") {
-    localStorage.removeItem("isLoggedIn");
-    localStorage.removeItem("user_id");
-    localStorage.removeItem("full_name");
-    alert("✅ You have been signed out.");
-  }
-}
-
-// ================= Dashboard Access Control =================
-// After successful login
-localStorage.setItem("isLoggedIn", "true");
-
-// On dashboard.html page load
-if (localStorage.getItem("isLoggedIn") !== "true") {
-  alert("⛔ You must log in first.");
-  window.location.href = "signin.html";
-}
-
-// Always show history on history.html
-if (window.location.pathname.includes("history.html")) {
-  showUserHistory();
-  showLocalStorageHistory(); // Also show localStorage history for reference
-}
-
-// ================= User-Specific Prediction History from Backend =================
-function showUserHistory() {
-  const user_id = localStorage.getItem("user_id");
-  const historyDiv = document.getElementById("history");
-  if (!historyDiv || !user_id) return;
-
-  apiFetch(`http://127.0.0.1:5000/history/${user_id}`)
-    .then(res => res.json())
-    .then(data => {
-      historyDiv.innerHTML = "<h3>Prediction History (Database)</h3>";
-      if (!data || data.length === 0) {
-        historyDiv.innerHTML += '<div class="result-box">No prediction history found in database.</div>';
-        return;
-      }
-      data.forEach((entry) => {
-        const block = document.createElement("div");
-        block.className = "result-box";
-        block.innerHTML = `
-          <strong>${formatUTCtoLocal(entry.created_at)}</strong><br/>
-          <b>Inputs:</b> N=${entry.nitrogen}, P=${entry.phosphorus}, K=${entry.potassium}, Temp=${entry.temperature}°C, Humidity=${entry.humidity}%, pH=${entry.ph}, Rainfall=${entry.rainfall} mm<br/>
-          <b>Predicted Crop:</b> ${entry.predicted_crop}
-        `;
-        historyDiv.appendChild(block);
-      });
-    })
-    .catch((err) => {
-      historyDiv.innerHTML += `<div class="result-box">Error loading database history: ${err.message}</div>`;
-      console.error(err);
-    });
-}
-
-// ================= Prediction History =================
-function showHistory() {
+// ================= Local Prediction History =================
+function showLocalStorageHistory() {
   const historyData = JSON.parse(localStorage.getItem("cropHistory")) || [];
   const historyDiv = document.getElementById("history");
   if (!historyDiv) return;
 
   historyDiv.innerHTML = "<h3>Prediction History</h3>";
   if (historyData.length === 0) {
-    historyDiv.innerHTML +=
-      '<div class="result-box">No prediction history found.</div>';
+    historyDiv.innerHTML += "<div>No history available.</div>";
     return;
   }
+
   historyData
     .slice(-10)
     .reverse()
@@ -460,69 +203,18 @@ function showHistory() {
       const block = document.createElement("div");
       block.className = "result-box";
       block.innerHTML = `
-      <strong>${formatUTCtoLocal(entry.date)}</strong><br/>
-      <b>Inputs:</b> N=${entry.inputs.N}, P=${entry.inputs.P}, K=${entry.inputs.K}, Temp=${entry.inputs.temperature}°C, Humidity=${entry.inputs.humidity}%, pH=${entry.inputs.ph}, Rainfall=${entry.inputs.rainfall} mm<br/>
-      <b>RF:</b> ${entry.predictions.random_forest}, <b>DT:</b> ${entry.predictions.decision_tree}, <b>SVM:</b> ${entry.predictions.svm}
-    `;
+        <strong>${formatUTCtoLocal(entry.date)}</strong><br/>
+        N=${entry.inputs.N}, P=${entry.inputs.P}, K=${entry.inputs.K},
+        Temp=${entry.inputs.temperature}°C, Humidity=${entry.inputs.humidity}%,
+        pH=${entry.inputs.ph}, Rainfall=${entry.inputs.rainfall} mm
+      `;
       historyDiv.appendChild(block);
     });
 }
 
-// ================= Show Localstorage History =================
-function showLocalStorageHistory() {
-  const historyData = JSON.parse(localStorage.getItem("cropHistory")) || [];
-  const historyDiv = document.getElementById("history");
-  if (!historyDiv) return;
-
-  historyDiv.innerHTML += "<h3>LocalStorage Prediction History</h3>";
-  if (historyData.length === 0) {
-    historyDiv.innerHTML += '<div class="result-box">No localStorage history found.</div>';
-    return;
+document.addEventListener("DOMContentLoaded", () => {
+  if (document.getElementById("history")) {
+    showLocalStorageHistory();
   }
-  historyData
-    .slice(-10)
-    .reverse()
-    .forEach((entry) => {
-      const block = document.createElement("div");
-      block.className = "result-box";
-      block.innerHTML = `
-      <strong>${formatUTCtoLocal(entry.date)}</strong><br/>
-      <b>Inputs:</b> N=${entry.inputs.N}, P=${entry.inputs.P}, K=${entry.inputs.K}, Temp=${entry.inputs.temperature}°C, Humidity=${entry.inputs.humidity}%, pH=${entry.inputs.ph}, Rainfall=${entry.inputs.rainfall} mm<br/>
-      <b>RF:</b> ${entry.predictions.random_forest}, <b>DT:</b> ${entry.predictions.decision_tree}, <b>SVM:</b> ${entry.predictions.svm}
-    `;
-      historyDiv.appendChild(block);
-    });
-}
+});
 
-// Profile Update Form
-const profileForm = document.getElementById("profileForm");
-if (profileForm) {
-  profileForm.addEventListener("submit", function (e) {
-    e.preventDefault();
-    const fullName = document.getElementById("fullName").value;
-    const email = document.getElementById("email").value;
-    const user_id = localStorage.getItem("user_id");
-    fetch("http://127.0.0.1:5000/update_profile", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id, full_name: fullName, email })
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error(`Network error: ${res.status}`);
-        return res.json();
-      })
-      .then((data) => {
-        if (data.error) {
-          alert("❌ " + data.error);
-        } else {
-          alert("✅ Profile updated successfully!");
-          localStorage.setItem("full_name", fullName);
-          localStorage.setItem("user_email", email);
-        }
-      })
-      .catch((err) => {
-        alert("❌ Profile update failed. " + err.message);
-        console.error(err);
-      });
-  });
-}

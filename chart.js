@@ -30,7 +30,7 @@ function renderPredictionResults(resp) {
   if (majorityEl) majorityEl.textContent = majority ? majority.toString().toUpperCase() : 'No consensus';
 
   // 3) Votes for crops (either resp.votes or compute from predictions)
-  const votes = resp.votes ? {...resp.votes} : {};
+  const votes = resp.votes ? { ...resp.votes } : {};
   if (!resp.votes) {
     const preds = resp.predictions || {};
     Object.values(preds).forEach(p => {
@@ -212,7 +212,27 @@ document.addEventListener('DOMContentLoaded', function () {
         ph: Number(document.getElementById('ph').value),
         rainfall: Number(document.getElementById('rainfall').value)
       };
+      const { errors, warnings } = validateSoilInput(body);
+
+      if (errors.length > 0) {
+        alert(
+          "Invalid input:\n" + errors.join("\n")
+        );
+        return; // ⛔ STOP here, no ML call
+      }
+
+      if (warnings.length > 0) {
+        console.warn("Threshold warnings:", warnings);
+        // Optional UI message
+        alert(
+          "Warning:\n" + warnings.join("\n") +
+          "\n\nPrediction will continue for analysis."
+        );
+      }
+
+      // ✅ Safe to predict
       sendPredictRequest(body);
+
     });
   }
 });
