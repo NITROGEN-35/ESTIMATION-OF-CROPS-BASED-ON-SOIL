@@ -126,13 +126,18 @@ if (warnings.length) {
 
     
 
-    fetch("http://127.0.0.1:5000/predict", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" ,
-        "X-User-Id": "1"
-      },
-      body: JSON.stringify(data),
-    })
+    fetch("http://127.0.0.1:5000/profile", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "X-User-Id": localStorage.getItem("user_id")
+  },
+  body: JSON.stringify({
+    full_name: document.getElementById("fullName").value,
+    email: document.getElementById("email").value
+  })
+})
+
       .then((res) => {
         if (!res.ok) throw new Error("Prediction request failed");
         return res.json();

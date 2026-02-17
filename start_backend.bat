@@ -1,3 +1,3 @@
 @echo off
-set NITROGEN35=NITROGEN35
+cd backend
 python app.py

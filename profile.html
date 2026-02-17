@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Profile</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <h2>Profile</h2>
+
+    <form id="profileForm">
+      <label>Full Name</label><br />
+      <input type="text" id="fullName" required /><br /><br />
+
+      <label>Email</label><br />
+      <input type="email" id="email" required /><br /><br />
+
+      <button type="submit">Update Profile</button>
+    </form>
+
+    <script src="script.js"></script>
+    <script src="auth_guard.js"></script>
+
+    <script>
+      document
+        .getElementById("profileForm")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+
+          fetch("http://127.0.0.1:5000/profile", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-User-Id": localStorage.getItem("user_id"),
+            },
+            body: JSON.stringify({
+              full_name: document.getElementById("fullName").value,
+              email: document.getElementById("email").value,
+            }),
+          })
+            .then((res) => res.json())
+            .then(() => alert("Profile updated successfully"))
+            .catch(() => alert("Profile update failed"));
+        });
+    </script>
+  </body>
+</html>
