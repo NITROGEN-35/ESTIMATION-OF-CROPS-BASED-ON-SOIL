@@ -4,43 +4,38 @@
     <meta charset="UTF-8" />
     <title>Profile</title>
     <link rel="stylesheet" href="style.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
-    <h2>Profile</h2>
+    <nav style="margin-bottom: 2em; text-align: center">
+      <a href="dashboard.html">Dashboard</a> |
+      <a href="history.html">History</a> |
+      <a href="#" data-action="logout">Logout</a>
+    </nav>
 
-    <form id="profileForm">
-      <label>Full Name</label><br />
-      <input type="text" id="fullName" required /><br /><br />
+    <div
+      class="main"
+      style="max-width: 480px; margin: 40px auto; padding: 24px"
+    >
+      <h2>My Profile</h2>
 
-      <label>Email</label><br />
-      <input type="email" id="email" required /><br /><br />
+      <form id="profileForm" style="margin-top: 20px">
+        <div class="form-group">
+          <label for="fullName">Full Name</label>
+          <input type="text" id="fullName" required />
+        </div>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" required />
+        </div>
+        <button type="submit" class="submit-btn">Update Profile</button>
+      </form>
+    </div>
 
-      <button type="submit">Update Profile</button>
-    </form>
-
+    <!-- script.js handles profileForm submit and pre-fill -->
     <script src="script.js"></script>
-
-    <script>
-      document
-        .getElementById("profileForm")
-        .addEventListener("submit", function (e) {
-          e.preventDefault();
-
-          fetch("http://127.0.0.1:5000/profile", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-User-Id": localStorage.getItem("user_id"),
-            },
-            body: JSON.stringify({
-              full_name: document.getElementById("fullName").value,
-              email: document.getElementById("email").value,
-            }),
-          })
-            .then((res) => res.json())
-            .then(() => alert("Profile updated successfully"))
-            .catch(() => alert("Profile update failed"));
-        });
-    </script>
   </body>
 </html>

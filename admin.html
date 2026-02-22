@@ -6,51 +6,94 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <h2>Admin Panel</h2>
+    <div class="main" style="padding: 24px">
+      <h2>Admin Panel</h2>
 
-    <button id="loadUsers">Load Users</button>
+      <div style="margin-bottom: 16px">
+        <button class="submit-btn" id="loadUsers">Load Users</button>
+        <button
+          class="submit-btn"
+          id="loadPredictions"
+          style="margin-left: 10px"
+        >
+          Load Predictions
+        </button>
+        <a href="dashboard.html" style="margin-left: 16px">← Dashboard</a>
+      </div>
 
-    <table border="1" style="margin-top: 20px">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Email</th>
-          <th>Created At</th>
-        </tr>
-      </thead>
-      <tbody id="userTable"></tbody>
-    </table>
+      <h3 id="tableHeading" style="margin-bottom: 8px"></h3>
+      <table border="1" style="width: 100%; border-collapse: collapse">
+        <thead>
+          <tr id="tableHead"></tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
 
+    <script src="script.js"></script>
     <script>
+      // Guard: only admins allowed
+      if (localStorage.getItem("is_admin") !== "1") {
+        toast("Admin access only.", "error");
+        setTimeout(() => {
+          window.location.href = "dashboard.html";
+        }, 800);
+      }
+
+      async function loadTable(endpoint, heading, columns) {
+        document.getElementById("tableHeading").textContent = heading;
+        const head = document.getElementById("tableHead");
+        const body = document.getElementById("tableBody");
+        head.innerHTML = columns
+          .map((c) => `<th style="padding:8px;text-align:left">${c}</th>`)
+          .join("");
+        body.innerHTML =
+          "<tr><td colspan='" + columns.length + "'>Loading…</td></tr>";
+        try {
+          const res = await apiFetch(API + endpoint);
+          const rows = await res.json();
+          body.innerHTML = "";
+          if (!rows.length) {
+            body.innerHTML = `<tr><td colspan="${columns.length}">No data.</td></tr>`;
+            return;
+          }
+          rows.forEach((row) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = columns
+              .map(
+                (c) =>
+                  `<td style="padding:8px">${row[c.toLowerCase().replace(/ /g, "_")] ?? "—"}</td>`,
+              )
+              .join("");
+            body.appendChild(tr);
+          });
+        } catch (err) {
+          body.innerHTML = `<tr><td colspan="${columns.length}" style="color:red">Error: ${err.message}</td></tr>`;
+        }
+      }
+
       document
         .getElementById("loadUsers")
-        .addEventListener("click", function () {
-          fetch("http://127.0.0.1:5000/admin/users", {
-            credentials: "include",
-          })
-            .then((res) => {
-              if (res.status === 403) {
-                alert("Access denied (Admin only)");
-                return [];
-              }
-              return res.json();
-            })
-            .then((users) => {
-              const table = document.getElementById("userTable");
-              table.innerHTML = "";
-
-              users.forEach((u) => {
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                  <td>${u.id}</td>
-                  <td>${u.email}</td>
-                  <td>${u.created_at}</td>
-                `;
-                table.appendChild(row);
-              });
-            })
-            .catch(() => alert("Failed to load users"));
-        });
+        .addEventListener("click", () =>
+          loadTable("/admin/users", "All Users", [
+            "ID",
+            "Full Name",
+            "Email",
+            "Is Admin",
+            "Created At",
+          ]),
+        );
+      document
+        .getElementById("loadPredictions")
+        .addEventListener("click", () =>
+          loadTable("/admin/predictions", "All Predictions", [
+            "ID",
+            "User ID",
+            "Predicted Crop",
+            "Best Model",
+            "Created At",
+          ]),
+        );
     </script>
   </body>
 </html>

@@ -4,8 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Prediction History</title>
-
-    <!-- Fonts & Icons -->
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
       rel="stylesheet"
@@ -14,72 +12,38 @@
       href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css"
       rel="stylesheet"
     />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-    />
-
-    <!-- Main Styles -->
     <link rel="stylesheet" href="style.css" />
   </head>
-
   <body>
-    <!-- Top Navigation -->
     <nav style="margin-bottom: 2em; text-align: center">
       <a href="dashboard.html">Dashboard</a> |
-      <a href="history.html">History</a>
+      <a href="history.html">History</a> |
+      <a href="#" data-action="logout">Logout</a>
     </nav>
 
-    <!-- Mobile Header -->
     <div class="header">
       <h2>Crop Estimator</h2>
       <div class="bx bx-menu" id="menu-icon"></div>
     </div>
-
-    <!-- Overlay -->
     <div class="overlay" id="overlay"></div>
-
-    <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
       <h2>Crop Estimator</h2>
       <a href="dashboard.html">Dashboard</a>
       <a href="history.html">History</a>
     </div>
 
-    <!-- Main Content -->
     <div class="main">
       <h1>Prediction History</h1>
-
       <p style="font-size: 14px; color: #666; margin-bottom: 15px">
-        This page displays previously generated crop predictions stored locally
-        for research and analysis purposes.
+        Crop predictions stored in the database for your account.
       </p>
 
-      <button class="clear-btn" onclick="clearHistory()">
-        🗑️ Clear Prediction History
-      </button>
-
-      <!-- History Container (IMPORTANT ID) -->
       <div id="history" class="results" style="margin-top: 15px">
-        <!-- History will be injected here by script.js -->
+        <!-- Populated by script.js showUserHistory() -->
       </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="script.js"></script>
-
-    <!-- Clear History Function -->
-    <script>
-      function clearHistory() {
-        if (confirm("Are you sure you want to clear all prediction history?")) {
-          localStorage.removeItem("cropHistory");
-          const historyDiv = document.getElementById("history");
-          if (historyDiv) {
-            historyDiv.innerHTML = "<div>No history available.</div>";
-          }
-        }
-      }
-    </script>
+    <!-- Only one script tag -->
     <script src="script.js"></script>
   </body>
 </html>

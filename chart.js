@@ -8,6 +8,30 @@ function formatModelName(key) {
   return key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 }
 
+
+// ---------- Soil input validation ----------
+function validateSoilInput(data) {
+  const errors = [];
+  const warnings = [];
+
+  if (isNaN(data.N) || data.N < 0 || data.N > 200)
+    errors.push('Nitrogen (N) must be between 0 and 200');
+  if (isNaN(data.P) || data.P < 0 || data.P > 200)
+    errors.push('Phosphorus (P) must be between 0 and 200');
+  if (isNaN(data.K) || data.K < 0 || data.K > 200)
+    errors.push('Potassium (K) must be between 0 and 200');
+  if (isNaN(data.temperature) || data.temperature < -20 || data.temperature > 60)
+    errors.push('Temperature must be between -20 and 60°C');
+  if (isNaN(data.humidity) || data.humidity < 0 || data.humidity > 100)
+    errors.push('Humidity must be between 0 and 100%');
+  if (isNaN(data.ph) || data.ph < 0 || data.ph > 14)
+    errors.push('pH must be between 0 and 14');
+  if (isNaN(data.rainfall) || data.rainfall < 0 || data.rainfall > 500)
+    errors.push('Rainfall must be between 0 and 500 mm');
+
+  return { errors, warnings };
+}
+
 // ---------- Render raw predictions, charts ----------
 function renderPredictionResults(resp) {
   if (!resp) return;
@@ -176,24 +200,19 @@ document.addEventListener('click', function (e) {
 // ---------- Send predict request ----------
 async function sendPredictRequest(body) {
   try {
-    const res = await fetch('http://127.0.0.1:5000/predict', {
+    const res = await apiFetch('http://127.0.0.1:5000/predict', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
-    const json = await res.json().catch(() => null);
-    if (!res.ok) {
-      console.error('Predict failed', res.status, json);
-      alert((json && json.error) || 'Prediction error');
-      return;
-    }
-    // attach input for chart convenience
+
+    const json = await res.json();
     json.input = body;
+
     renderPredictionResults(json);
     renderBestModelCard(json);
+
   } catch (err) {
     console.error('Network error predicting', err);
-    alert('Network/predict error');
   }
 }
 
