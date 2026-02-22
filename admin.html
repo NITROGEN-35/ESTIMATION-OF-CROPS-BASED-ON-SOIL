@@ -21,21 +21,16 @@
       <tbody id="userTable"></tbody>
     </table>
 
-    <script src="script.js"></script>
-    <script src="auth_guard.js"></script>
-
     <script>
       document
         .getElementById("loadUsers")
         .addEventListener("click", function () {
           fetch("http://127.0.0.1:5000/admin/users", {
-            headers: {
-              "X-User-Id": localStorage.getItem("user_id"),
-            },
+            credentials: "include",
           })
             .then((res) => {
               if (res.status === 403) {
-                alert("Access denied");
+                alert("Access denied (Admin only)");
                 return [];
               }
               return res.json();
@@ -47,13 +42,14 @@
               users.forEach((u) => {
                 const row = document.createElement("tr");
                 row.innerHTML = `
-        <td>${u.id}</td>
-        <td>${u.email}</td>
-        <td>${u.created_at}</td>
-      `;
+                  <td>${u.id}</td>
+                  <td>${u.email}</td>
+                  <td>${u.created_at}</td>
+                `;
                 table.appendChild(row);
               });
-            });
+            })
+            .catch(() => alert("Failed to load users"));
         });
     </script>
   </body>

@@ -36,6 +36,7 @@
           fetch("http://127.0.0.1:5000/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            credentials: "include",
             body: JSON.stringify({
               email: document.getElementById("email").value,
               password: document.getElementById("password").value,
@@ -43,15 +44,10 @@
           })
             .then((res) => res.json())
             .then((data) => {
-              if (!data.user_id) {
+              if (data.error) {
                 alert("Invalid email or password");
                 return;
               }
-
-              // 🔑 SINGLE SOURCE OF TRUTH
-              localStorage.setItem("user_id", data.user_id);
-              localStorage.setItem("is_admin", data.is_admin);
-
               window.location.href = "dashboard.html";
             })
             .catch(() => alert("Login failed"));
