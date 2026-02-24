@@ -1,0 +1,38 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.7, pytest-9.0.2, pluggy-1.6.0 -- d:\Sanyam_Kushwaha\3rd year project\ESTIMATION-OF-CROPS-BASED-ON-SOIL-MAIN\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: d:\Sanyam_Kushwaha\3rd year project\ESTIMATION-OF-CROPS-BASED-ON-SOIL-MAIN\backend
+plugins: cov-7.0.0
+collecting ... collected 16 items
+
+tests/test_admin.py::test_admin_users PASSED                             [  6%]
+tests/test_admin.py::test_admin_predictions PASSED                       [ 12%]
+tests/test_app_logic.py::test_calculate_soil_score_boundaries PASSED     [ 18%]
+tests/test_app_logic.py::test_predict_crop_tie PASSED                    [ 25%]
+tests/test_app_logic.py::test_predict_missing_fields PASSED              [ 31%]
+tests/test_app_logic.py::test_predict_invalid_values PASSED              [ 37%]
+tests/test_app_logic.py::test_predict_out_of_range PASSED                [ 43%]
+tests/test_app_logic.py::test_predict_db_error PASSED                    [ 50%]
+tests/test_app_logic.py::test_predict_success PASSED                     [ 56%]
+tests/test_app_logic.py::test_history_unauthorized PASSED                [ 62%]
+tests/test_app_logic.py::test_history_forbidden PASSED                   [ 68%]
+tests/test_app_logic.py::test_history_db_error PASSED                    [ 75%]
+tests/test_app_logic.py::test_history_success PASSED                     [ 81%]
+tests/test_auth.py::test_register PASSED                                 [ 87%]
+tests/test_auth.py::test_login PASSED                                    [ 93%]
+tests/test_predict.py::test_predict PASSED                               [100%]d:\Sanyam_Kushwaha\3rd year project\ESTIMATION-OF-CROPS-BASED-ON-SOIL-MAIN\.venv\Lib\site-packages\coverage\inorout.py:561: CoverageWarning: Module backend was never imported. (module-not-imported); see https://coverage.readthedocs.io/en/7.13.4/messages.html#warning-module-not-imported
+  self.warn(f"Module {pkg} was never imported.", slug="module-not-imported")
+d:\Sanyam_Kushwaha\3rd year project\ESTIMATION-OF-CROPS-BASED-ON-SOIL-MAIN\.venv\Lib\site-packages\coverage\control.py:958: CoverageWarning: No data was collected. (no-data-collected); see https://coverage.readthedocs.io/en/7.13.4/messages.html#warning-no-data-collected
+  self._warn("No data was collected.", slug="no-data-collected")
+d:\Sanyam_Kushwaha\3rd year project\ESTIMATION-OF-CROPS-BASED-ON-SOIL-MAIN\.venv\Lib\site-packages\pytest_cov\plugin.py:363: CovReportWarning: Failed to generate report: No data to report.
+
+  warnings.warn(CovReportWarning(message), stacklevel=1)
+
+WARNING: Failed to generate report: No data to report.
+
+
+
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.13.7-final-0 _______________
+
+============================= 16 passed in 0.60s ==============================

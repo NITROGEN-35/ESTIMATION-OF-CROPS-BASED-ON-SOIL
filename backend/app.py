@@ -28,6 +28,50 @@ app.register_blueprint(admin_bp)
 app.register_blueprint(profile_bp)
 
 
+# ===============================
+# Soil Health Score Function
+# ===============================
+def calculate_soil_score(N, P, K, temperature, humidity, ph, rainfall):
+    score = 0
+
+    # pH (25)
+    if 6.0 <= ph <= 7.5:
+        score += 25
+    elif 5.5 <= ph < 6.0 or 7.5 < ph <= 8.0:
+        score += 18
+    elif 5.0 <= ph < 5.5 or 8.0 < ph <= 8.5:
+        score += 10
+    else:
+        score += 5
+
+    # NPK (35)
+    npk_score = 35
+    for value in [N, P, K]:
+        if value < 30:
+            npk_score -= 8
+        elif value > 150:
+            npk_score -= 5
+    score += max(npk_score, 0)
+
+    # Moisture (20)
+    if 40 <= humidity <= 80 and 50 <= rainfall <= 300:
+        score += 20
+    else:
+        score += 10
+
+    # Temperature (20)
+    if 20 <= temperature <= 30:
+        score += 20
+    elif 30 < temperature <= 35:
+        score += 10
+    else:
+        score += 5
+
+    # ensure float for consistency (could be int when score is a round
+    # number, which broke one of the white‑box tests).
+    return float(round(score, 2))
+
+
 # ─────────────────────────────────────────────
 # HOME
 # ─────────────────────────────────────────────
@@ -78,8 +122,12 @@ def predict():
         return jsonify({"error": "Unauthorized"}), 401
 
     try:
+        # `get_json(force=True)` will return `{}` for an empty object, but
+        # `None` when the body isn't valid JSON at all.  Treat only the latter
+        # as "no JSON received" so that an empty dict triggers the regular
+        # missing‑fields message.
         data = request.get_json(force=True)
-        if not data:
+        if data is None:
             return jsonify({"error": "No JSON body received"}), 400
 
         missing = [f for f in REQUIRED_FIELDS if f not in data]
