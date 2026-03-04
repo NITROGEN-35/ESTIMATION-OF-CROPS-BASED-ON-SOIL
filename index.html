@@ -1,0 +1,833 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CropSense — AI-Powered Crop Recommendation</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <style>
+      :root {
+        --green: #1a7a4a;
+        --green-light: #2db56e;
+        --green-pale: #e8f7ee;
+        --green-mid: #c2ecd5;
+        --amber: #e07b24;
+        --blue: #1e5fa8;
+        --dark: #111b14;
+        --gray: #6b7280;
+        --gray-light: #f4f6f4;
+        --white: #ffffff;
+        --border: #d4e8da;
+        --shadow: 0 4px 24px rgba(26, 122, 74, 0.1);
+      }
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        font-family: "DM Sans", sans-serif;
+        background: #f0f7f2;
+        color: var(--dark);
+        line-height: 1.65;
+      }
+
+      /* ── NAV ── */
+      nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 40px;
+        height: 64px;
+      }
+      .nav-brand {
+        font-family: "Syne", sans-serif;
+        font-weight: 800;
+        font-size: 1.2rem;
+        color: var(--green);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+      }
+      .nav-links {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .nav-links a {
+        text-decoration: none;
+        color: var(--gray);
+        font-size: 0.9rem;
+        font-weight: 500;
+        padding: 6px 14px;
+        border-radius: 8px;
+        transition: all 0.2s;
+      }
+      .nav-links a:hover {
+        background: var(--green-pale);
+        color: var(--green);
+      }
+      .nav-links .nav-cta {
+        background: var(--green);
+        color: white;
+        padding: 8px 20px;
+        border-radius: 100px;
+        font-weight: 600;
+      }
+      .nav-links .nav-cta:hover {
+        background: #155e3a;
+        color: white;
+      }
+
+      /* ── HERO ── */
+      .hero {
+        min-height: 100vh;
+        background: linear-gradient(
+          135deg,
+          #0d4a28 0%,
+          #1a7a4a 55%,
+          #2db56e 100%
+        );
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 100px 40px 80px;
+        position: relative;
+        overflow: hidden;
+      }
+      .hero::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      }
+      .hero-inner {
+        position: relative;
+        max-width: 800px;
+      }
+      .hero-tag {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 5px 18px;
+        border-radius: 100px;
+        font-size: 11px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        margin-bottom: 24px;
+        animation: fadeUp 0.6s ease both;
+      }
+      .hero h1 {
+        font-family: "Syne", sans-serif;
+        font-size: clamp(2.4rem, 6vw, 4rem);
+        font-weight: 800;
+        line-height: 1.08;
+        margin-bottom: 20px;
+        animation: fadeUp 0.7s ease 0.1s both;
+      }
+      .hero h1 span {
+        color: #7fe8b0;
+      }
+      .hero p {
+        font-size: 1.15rem;
+        opacity: 0.85;
+        max-width: 560px;
+        margin: 0 auto 36px;
+        animation: fadeUp 0.7s ease 0.2s both;
+      }
+      .hero-btns {
+        display: flex;
+        gap: 14px;
+        justify-content: center;
+        flex-wrap: wrap;
+        animation: fadeUp 0.7s ease 0.3s both;
+      }
+      .btn-hero-primary {
+        background: white;
+        color: var(--green);
+        padding: 14px 32px;
+        border-radius: 100px;
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        font-size: 0.95rem;
+        text-decoration: none;
+        transition: all 0.2s;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      }
+      .btn-hero-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
+      }
+      .btn-hero-secondary {
+        background: rgba(255, 255, 255, 0.15);
+        border: 1.5px solid rgba(255, 255, 255, 0.4);
+        color: white;
+        padding: 14px 32px;
+        border-radius: 100px;
+        font-family: "Syne", sans-serif;
+        font-weight: 600;
+        font-size: 0.95rem;
+        text-decoration: none;
+        transition: all 0.2s;
+      }
+      .btn-hero-secondary:hover {
+        background: rgba(255, 255, 255, 0.25);
+      }
+      .hero-stats {
+        display: flex;
+        justify-content: center;
+        gap: 50px;
+        margin-top: 60px;
+        flex-wrap: wrap;
+        animation: fadeUp 0.7s ease 0.4s both;
+      }
+      .hero-stat strong {
+        font-family: "Syne", sans-serif;
+        font-size: 2.2rem;
+        display: block;
+        font-weight: 800;
+      }
+      .hero-stat span {
+        font-size: 0.78rem;
+        opacity: 0.7;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .hero-stat .accent {
+        color: #7fe8b0;
+      }
+
+      /* ── SECTIONS ── */
+      .section {
+        padding: 80px 40px;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      .section-label {
+        font-family: "Syne", sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: var(--green);
+        margin-bottom: 8px;
+      }
+      .section-title {
+        font-family: "Syne", sans-serif;
+        font-size: clamp(1.6rem, 3vw, 2.4rem);
+        font-weight: 800;
+        margin-bottom: 16px;
+        color: var(--dark);
+      }
+      .section-sub {
+        color: var(--gray);
+        font-size: 1.05rem;
+        max-width: 600px;
+        margin-bottom: 50px;
+      }
+
+      /* ── FEATURES GRID ── */
+      .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 24px;
+      }
+      .feature-card {
+        background: white;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        padding: 32px 28px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s;
+      }
+      .feature-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.09);
+      }
+      .feature-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        margin-bottom: 18px;
+      }
+      .feature-icon.green {
+        background: var(--green-pale);
+        color: var(--green);
+      }
+      .feature-icon.amber {
+        background: #fef3e8;
+        color: var(--amber);
+      }
+      .feature-icon.blue {
+        background: #e8f0fb;
+        color: var(--blue);
+      }
+      .feature-card h3 {
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        font-size: 1.05rem;
+        margin-bottom: 10px;
+      }
+      .feature-card p {
+        color: var(--gray);
+        font-size: 0.9rem;
+        line-height: 1.6;
+      }
+
+      /* ── HOW IT WORKS ── */
+      .how-section {
+        background: white;
+      }
+      .how-wrap {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 80px 40px;
+      }
+      .steps-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 20px;
+        margin-top: 10px;
+      }
+      .step-card {
+        background: var(--gray-light);
+        border-radius: 16px;
+        padding: 28px 24px;
+        border: 1px solid var(--border);
+        position: relative;
+      }
+      .step-num {
+        font-family: "Syne", sans-serif;
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--green-mid);
+        line-height: 1;
+        margin-bottom: 14px;
+      }
+      .step-card h4 {
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+      .step-card p {
+        font-size: 0.88rem;
+        color: var(--gray);
+        line-height: 1.55;
+      }
+
+      /* ── MODEL ACCURACY TABLE ── */
+      .models-section {
+        background: var(--green);
+        color: white;
+      }
+      .models-wrap {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 80px 40px;
+      }
+      .models-wrap .section-label {
+        color: #7fe8b0;
+      }
+      .models-wrap .section-title {
+        color: white;
+      }
+      .models-wrap .section-sub {
+        color: rgba(255, 255, 255, 0.7);
+      }
+      .model-bars {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .model-bar-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .model-bar-label {
+        font-family: "Syne", sans-serif;
+        font-weight: 600;
+        font-size: 0.85rem;
+        width: 170px;
+        flex-shrink: 0;
+      }
+      .model-bar-track {
+        flex: 1;
+        height: 10px;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 100px;
+        overflow: hidden;
+      }
+      .model-bar-fill {
+        height: 100%;
+        background: #7fe8b0;
+        border-radius: 100px;
+        transition: width 1s ease;
+      }
+      .model-bar-fill.best {
+        background: white;
+      }
+      .model-bar-pct {
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        font-size: 0.88rem;
+        width: 52px;
+        text-align: right;
+        color: rgba(255, 255, 255, 0.9);
+      }
+      .model-bar-pct.best {
+        color: white;
+      }
+
+      /* ── DATASET HIGHLIGHT ── */
+      .dataset-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-top: 10px;
+      }
+      @media (max-width: 700px) {
+        .dataset-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .dataset-card {
+        background: white;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        padding: 28px;
+      }
+      .dataset-card h4 {
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        margin-bottom: 16px;
+        font-size: 1rem;
+      }
+      .param-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .param-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: var(--gray-light);
+        border-radius: 10px;
+        padding: 10px 14px;
+      }
+      .param-name {
+        font-weight: 600;
+        font-size: 0.88rem;
+      }
+      .param-range {
+        font-size: 0.8rem;
+        color: var(--gray);
+      }
+      .param-unit {
+        background: var(--green-pale);
+        color: var(--green);
+        border-radius: 6px;
+        padding: 2px 10px;
+        font-size: 0.75rem;
+        font-weight: 600;
+      }
+
+      /* ── RESEARCH CALLOUT ── */
+      .callout-section {
+        background: linear-gradient(135deg, var(--dark) 0%, #1a3d2a 100%);
+        padding: 80px 40px;
+        text-align: center;
+        color: white;
+      }
+      .callout-inner {
+        max-width: 700px;
+        margin: 0 auto;
+      }
+      .callout-section .section-label {
+        color: #7fe8b0;
+      }
+      .callout-section .section-title {
+        color: white;
+      }
+      .callout-section p {
+        color: rgba(255, 255, 255, 0.75);
+        font-size: 1.05rem;
+        margin-bottom: 32px;
+      }
+      .callout-btns {
+        display: flex;
+        gap: 14px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .btn-white {
+        background: white;
+        color: var(--green);
+        padding: 13px 30px;
+        border-radius: 100px;
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        font-size: 0.9rem;
+        text-decoration: none;
+        transition: all 0.2s;
+      }
+      .btn-white:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+      }
+      .btn-outline-white {
+        border: 1.5px solid rgba(255, 255, 255, 0.4);
+        color: white;
+        padding: 13px 30px;
+        border-radius: 100px;
+        font-family: "Syne", sans-serif;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-decoration: none;
+        transition: all 0.2s;
+        background: transparent;
+      }
+      .btn-outline-white:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      /* ── FOOTER ── */
+      footer {
+        background: var(--dark);
+        color: rgba(255, 255, 255, 0.5);
+        padding: 32px 40px;
+        text-align: center;
+        font-size: 0.85rem;
+      }
+      footer a {
+        color: #7fe8b0;
+        text-decoration: none;
+      }
+
+      /* ── ANIMATIONS ── */
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(24px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- NAV -->
+    <nav>
+      <a class="nav-brand" href="index.html">🌾 CropSense</a>
+      <div class="nav-links">
+        <a href="dashboard.html">Dashboard</a>
+        <a href="research.html">Research</a>
+        <a href="history.html">History</a>
+        <a href="signin.html" class="nav-cta">Sign In</a>
+      </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-inner">
+        <div class="hero-tag">🌱 AI-Powered Agriculture · 8 ML Models</div>
+        <h1>
+          Smarter Farming Starts<br />with <span>Better Predictions</span>
+        </h1>
+        <p>
+          Enter your soil parameters and let 8 machine learning models vote on
+          the optimal crop for your land — with 99.27% accuracy.
+        </p>
+        <div class="hero-btns">
+          <a href="signin.html" class="btn-hero-primary">🚀 Get Started Free</a>
+          <a href="research.html" class="btn-hero-secondary"
+            >📊 View Research</a
+          >
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <strong class="accent">99.27%</strong>
+            <span>Best Accuracy</span>
+          </div>
+          <div class="hero-stat">
+            <strong class="accent">8</strong>
+            <span>ML Models</span>
+          </div>
+          <div class="hero-stat">
+            <strong class="accent">22</strong>
+            <span>Crop Types</span>
+          </div>
+          <div class="hero-stat">
+            <strong class="accent">2200</strong>
+            <span>Training Samples</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="section">
+      <div class="section-label">Why CropSense</div>
+      <div class="section-title">Everything a Farmer Needs</div>
+      <p class="section-sub">
+        From raw soil numbers to actionable crop guidance — powered by a
+        validated ensemble of 8 classifiers.
+      </p>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon green"><i class="fas fa-flask"></i></div>
+          <h3>8-Model Ensemble Voting</h3>
+          <p>
+            Random Forest, Gradient Boost, SVM, KNN, AdaBoost, Naive Bayes,
+            Decision Tree, and Logistic Regression all vote. The majority wins.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon amber"><i class="fas fa-seedling"></i></div>
+          <h3>Top 3 Crop Suggestions</h3>
+          <p>
+            Not just one answer — see which crops every model agrees on, with
+            vote counts and confidence percentages for each option.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon blue"><i class="fas fa-vial"></i></div>
+          <h3>Fertilizer Guidance</h3>
+          <p>
+            After crop recommendation, get N-P-K gap analysis. Know exactly how
+            much Urea, DAP, or MOP to add for optimal yield.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon green"><i class="fas fa-heartbeat"></i></div>
+          <h3>Soil Health Score</h3>
+          <p>
+            A 0–100 gauge shows how suitable your current soil is for the
+            recommended crop — immediately intuitive for any farmer.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon amber"><i class="fas fa-history"></i></div>
+          <h3>Full Prediction History</h3>
+          <p>
+            Every prediction is stored with all 8 model outputs, timestamps, and
+            input parameters for your personal records.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon blue"><i class="fas fa-chart-bar"></i></div>
+          <h3>Research Dashboard</h3>
+          <p>
+            Explore EDA, confusion matrices, model comparison tables, and
+            feature importance charts — built for academic rigor.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <div class="how-section">
+      <div class="how-wrap">
+        <div class="section-label">Process</div>
+        <div class="section-title">How It Works</div>
+        <p class="section-sub">
+          Four simple steps from soil sample to crop decision.
+        </p>
+        <div class="steps-grid">
+          <div class="step-card">
+            <div class="step-num">01</div>
+            <h4>Enter Soil Data</h4>
+            <p>
+              Input your N, P, K values, temperature, humidity, pH, and rainfall
+              using sliders or direct entry.
+            </p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">02</div>
+            <h4>8 Models Predict</h4>
+            <p>
+              All 8 classifiers run simultaneously — each making an independent
+              crop prediction based on trained patterns.
+            </p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">03</div>
+            <h4>Majority Vote</h4>
+            <p>
+              The crop receiving the most model votes wins. Ties are broken by
+              the highest-accuracy model (Gradient Boost).
+            </p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">04</div>
+            <h4>Actionable Guidance</h4>
+            <p>
+              Receive crop name, soil health score, fertilizer recommendations,
+              and growing tips — all in one dashboard.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODEL ACCURACY BARS -->
+    <div class="models-section">
+      <div class="models-wrap">
+        <div class="section-label">Model Performance</div>
+        <div class="section-title">Pre-trained Accuracy — All 8 Models</div>
+        <p class="section-sub">
+          Trained on the Kaggle Crop Recommendation Dataset (2200 samples, 22
+          crops). Test set: 20% holdout.
+        </p>
+        <div class="model-bars" id="modelBars">
+          <!-- filled by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- DATASET INFO -->
+    <section class="section">
+      <div class="section-label">Dataset</div>
+      <div class="section-title">Input Parameters Explained</div>
+      <p class="section-sub">
+        7 soil and climate features power all predictions. Here's what each
+        means and its valid range.
+      </p>
+      <div class="dataset-grid">
+        <div class="dataset-card">
+          <h4>🌿 Soil Nutrients</h4>
+          <div class="param-list">
+            <div class="param-item">
+              <span class="param-name">Nitrogen (N)</span>
+              <span class="param-range">0 – 140 kg/ha</span>
+              <span class="param-unit">kg/ha</span>
+            </div>
+            <div class="param-item">
+              <span class="param-name">Phosphorus (P)</span>
+              <span class="param-range">5 – 145 kg/ha</span>
+              <span class="param-unit">kg/ha</span>
+            </div>
+            <div class="param-item">
+              <span class="param-name">Potassium (K)</span>
+              <span class="param-range">5 – 205 kg/ha</span>
+              <span class="param-unit">kg/ha</span>
+            </div>
+            <div class="param-item">
+              <span class="param-name">Soil pH</span>
+              <span class="param-range">3.5 – 9.9</span>
+              <span class="param-unit">0–14</span>
+            </div>
+          </div>
+        </div>
+        <div class="dataset-card">
+          <h4>🌦️ Climate Factors</h4>
+          <div class="param-list">
+            <div class="param-item">
+              <span class="param-name">Temperature</span>
+              <span class="param-range">8 – 44 °C</span>
+              <span class="param-unit">°C</span>
+            </div>
+            <div class="param-item">
+              <span class="param-name">Humidity</span>
+              <span class="param-range">14 – 100 %</span>
+              <span class="param-unit">%</span>
+            </div>
+            <div class="param-item">
+              <span class="param-name">Rainfall</span>
+              <span class="param-range">20 – 299 mm</span>
+              <span class="param-unit">mm</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESEARCH CALLOUT -->
+    <section class="callout-section">
+      <div class="callout-inner">
+        <div class="section-label">Academic</div>
+        <div class="section-title">Built for Research Too</div>
+        <p>
+          Explore EDA visualizations, confusion matrices, SHAP explainability
+          analysis, cross-validation boxplots, and state-of-the-art comparisons
+          — all on the Research page.
+        </p>
+        <div class="callout-btns">
+          <a href="research.html" class="btn-white"
+            >📊 Open Research Dashboard</a
+          >
+          <a href="dashboard.html" class="btn-outline-white"
+            >🌾 Try the Farmer Tool</a
+          >
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+      <p>
+        🌾 CropSense — Crop Recommendation System &nbsp;·&nbsp; Built with Flask
+        + Scikit-Learn &nbsp;·&nbsp;
+        <a href="research.html">Research</a> &nbsp;·&nbsp;
+        <a href="dashboard.html">Dashboard</a>
+      </p>
+    </footer>
+
+    <script>
+      // Model accuracy bars (static pre-computed values from ml_core.py outputs)
+      const modelData = [
+        { name: "Gradient Boost", acc: 99.27, best: true },
+        { name: "Random Forest", acc: 99.09, best: false },
+        { name: "Decision Tree", acc: 98.18, best: false },
+        { name: "AdaBoost", acc: 97.73, best: false },
+        { name: "K-Nearest Neighbors", acc: 97.5, best: false },
+        { name: "SVM", acc: 97.27, best: false },
+        { name: "Logistic Regression", acc: 95.91, best: false },
+        { name: "Naive Bayes", acc: 99.09, best: false },
+      ];
+
+      const barsEl = document.getElementById("modelBars");
+      modelData.forEach((m) => {
+        barsEl.innerHTML += `
+      <div class="model-bar-row">
+        <div class="model-bar-label">${m.name}${m.best ? " 🏆" : ""}</div>
+        <div class="model-bar-track">
+          <div class="model-bar-fill ${m.best ? "best" : ""}" style="width:${m.acc}%"></div>
+        </div>
+        <div class="model-bar-pct ${m.best ? "best" : ""}">${m.acc}%</div>
+      </div>`;
+      });
+    </script>
+  </body>
+</html>

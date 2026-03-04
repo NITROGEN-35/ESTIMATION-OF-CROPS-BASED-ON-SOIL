@@ -1,49 +1,161 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Prediction History</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <nav style="margin-bottom: 2em; text-align: center">
-      <a href="dashboard.html">Dashboard</a> |
-      <a href="history.html">History</a> |
-      <a href="#" data-action="logout">Logout</a>
-    </nav>
-
-    <div class="header">
-      <h2>Crop Estimator</h2>
-      <div class="bx bx-menu" id="menu-icon"></div>
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CropSense — History</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    :root{--green:#1a7a4a;--green-light:#2db56e;--green-pale:#e8f7ee;--green-mid:#c2ecd5;--amber:#e07b24;--amber-pale:#fef3e8;--dark:#111b14;--gray:#6b7280;--gray-light:#f4f6f4;--white:#ffffff;--border:#d4e8da;--sidebar-w:240px;}
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'DM Sans',sans-serif;background:#f0f7f2;color:var(--dark);display:flex;min-height:100vh;}
+    .sidebar{width:var(--sidebar-w);background:var(--dark);display:flex;flex-direction:column;padding:24px 0;position:fixed;top:0;left:0;bottom:0;z-index:50;}
+    .sidebar-brand{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;color:white;padding:0 24px 24px;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;gap:8px;text-decoration:none;}
+    .sidebar nav{flex:1;padding:16px 0;}
+    .sidebar nav a{display:flex;align-items:center;gap:12px;padding:11px 24px;color:rgba(255,255,255,0.6);text-decoration:none;font-size:0.9rem;font-weight:500;transition:all 0.15s;border-left:3px solid transparent;}
+    .sidebar nav a:hover{color:white;background:rgba(255,255,255,0.07);}
+    .sidebar nav a.active{color:#7fe8b0;border-left-color:#7fe8b0;background:rgba(127,232,176,0.08);}
+    .main{margin-left:var(--sidebar-w);flex:1;padding:32px;max-width:1100px;}
+    .page-header{margin-bottom:28px;display:flex;align-items:center;justify-content:space-between;}
+    .page-header h1{font-family:'Syne',sans-serif;font-size:1.7rem;font-weight:800;}
+    .page-header p{color:var(--gray);margin-top:4px;}
+    .card{background:white;border-radius:20px;border:1px solid var(--border);box-shadow:0 2px 12px rgba(0,0,0,0.04);margin-bottom:24px;}
+    .card-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+    .card-title{font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;}
+    .card-body{padding:20px 24px;}
+    .hist-table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+    .hist-table th{text-align:left;padding:10px 14px;color:var(--gray);font-weight:600;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px;border-bottom:2px solid var(--border);}
+    .hist-table td{padding:12px 14px;border-bottom:1px solid #f0f5f2;vertical-align:middle;}
+    .hist-table tr:last-child td{border:none;}
+    .hist-table tr:hover td{background:#f9fbf9;}
+    .crop-badge{display:inline-flex;align-items:center;gap:6px;background:var(--green-pale);color:var(--green);border-radius:100px;padding:4px 12px;font-weight:600;font-size:0.82rem;}
+    .param-mini{display:flex;gap:6px;flex-wrap:wrap;}
+    .param-chip{background:var(--gray-light);border-radius:6px;padding:2px 8px;font-size:0.72rem;color:var(--gray);}
+    .param-chip strong{color:var(--dark);}
+    .btn-sm{padding:6px 14px;border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;border:none;font-family:'Syne',sans-serif;}
+    .btn-green{background:var(--green);color:white;}
+    .btn-green:hover{background:#155e3a;}
+    .btn-outline{background:transparent;border:1.5px solid var(--border);color:var(--gray);}
+    .btn-outline:hover{background:var(--gray-light);}
+    .empty-state{text-align:center;padding:60px 20px;color:var(--gray);}
+    .empty-icon{font-size:3rem;margin-bottom:14px;opacity:0.35;}
+    .empty-state h3{font-family:'Syne',sans-serif;font-weight:700;margin-bottom:8px;color:var(--dark);}
+    .empty-state p{font-size:0.9rem;max-width:360px;margin:0 auto 20px;}
+    .loading-state{text-align:center;padding:40px;color:var(--gray);}
+    .spinner-sm{width:28px;height:28px;border:3px solid var(--green-mid);border-top-color:var(--green);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .summary-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;}
+    .sum-box{background:white;border-radius:16px;border:1px solid var(--border);padding:20px;text-align:center;}
+    .sum-val{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:var(--green);}
+    .sum-label{font-size:0.78rem;color:var(--gray);text-transform:uppercase;letter-spacing:0.5px;margin-top:4px;}
+    #toast{position:fixed;bottom:24px;right:24px;z-index:300;padding:12px 20px;border-radius:10px;color:white;font-family:'Syne',sans-serif;font-size:0.85rem;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,0.2);display:none;max-width:320px;}
+    #toast.show{display:block;}
+  </style>
+</head>
+<body>
+<aside class="sidebar">
+  <a class="sidebar-brand" href="index.html">🌾 CropSense</a>
+  <nav>
+    <a href="dashboard.html"><i class="fas fa-th-large fa-fw"></i> Dashboard</a>
+    <a href="research.html"><i class="fas fa-flask fa-fw"></i> Research</a>
+    <a href="history.html" class="active"><i class="fas fa-history fa-fw"></i> History</a>
+    <a href="profile.html"><i class="fas fa-user fa-fw"></i> Profile</a>
+  </nav>
+</aside>
+<div id="toast"></div>
+<main class="main">
+  <div class="page-header">
+    <div>
+      <h1>📋 Prediction History</h1>
+      <p>All your past crop recommendations, stored securely.</p>
     </div>
-    <div class="overlay" id="overlay"></div>
-    <div class="sidebar" id="sidebar">
-      <h2>Crop Estimator</h2>
-      <a href="dashboard.html">Dashboard</a>
-      <a href="history.html">History</a>
+    <a href="dashboard.html" class="btn-sm btn-green"><i class="fas fa-plus"></i> New Prediction</a>
+  </div>
+
+  <!-- Summary boxes (filled by JS) -->
+  <div class="summary-row" id="summaryRow" style="display:none;">
+    <div class="sum-box"><div class="sum-val" id="sumTotal">—</div><div class="sum-label">Total Predictions</div></div>
+    <div class="sum-box"><div class="sum-val" id="sumTopCrop">—</div><div class="sum-label">Most Recommended</div></div>
+    <div class="sum-box"><div class="sum-val" id="sumLatest">—</div><div class="sum-label">Latest Prediction</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">All Predictions</span>
+      <button class="btn-sm btn-outline" id="refreshBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
     </div>
-
-    <div class="main">
-      <h1>Prediction History</h1>
-      <p style="font-size: 14px; color: #666; margin-bottom: 15px">
-        Crop predictions stored in the database for your account.
-      </p>
-
-      <div id="history" class="results" style="margin-top: 15px">
-        <!-- Populated by script.js showUserHistory() -->
-      </div>
+    <div class="card-body" id="historyBody">
+      <div class="loading-state"><div class="spinner-sm"></div><p>Loading history…</p></div>
     </div>
+  </div>
+</main>
 
-    <!-- Only one script tag -->
-    <script src="script.js"></script>
-  </body>
+<script src="script.js"></script>
+<script>
+const API_BASE="http://127.0.0.1:5000";
+function showToast(msg,type='info'){const c={info:'#2b7a4b',error:'#c0392b',warn:'#d68910'};const t=document.getElementById('toast');t.textContent=msg;t.style.background=c[type]||c.info;t.className='show';setTimeout(()=>t.className='',4000);}
+function formatDate(s){if(!s)return'—';const d=new Date(s.includes('T')?s:s+'Z');return isNaN(d)?s:d.toLocaleString();}
+
+async function loadHistory(){
+  const userId=localStorage.getItem('user_id');
+  if(!userId){
+    document.getElementById('historyBody').innerHTML=`<div class="empty-state"><div class="empty-icon">🔐</div><h3>Not Signed In</h3><p>Please sign in to view your prediction history.</p><a href="signin.html" class="btn-sm btn-green">Sign In</a></div>`;
+    return;
+  }
+  try{
+    const res=await apiFetch(`${API_BASE}/history/${userId}`);
+    if(!res.ok){const e=await res.json();showToast(e.error||'Failed to load history','error');renderEmpty();return;}
+    const data=await res.json();
+    renderHistory(data);
+  }catch(err){showToast('Network error — is backend running?','error');renderEmpty();}
+}
+
+function renderEmpty(){
+  document.getElementById('historyBody').innerHTML=`<div class="empty-state"><div class="empty-icon">🌾</div><h3>No Predictions Yet</h3><p>Head to the dashboard and make your first crop recommendation.</p><a href="dashboard.html" class="btn-sm btn-green">Go to Dashboard</a></div>`;
+}
+
+function renderHistory(rows){
+  if(!rows||rows.length===0){renderEmpty();return;}
+
+  // Summary
+  document.getElementById('summaryRow').style.display='grid';
+  document.getElementById('sumTotal').textContent=rows.length;
+  const cropFreq={};
+  rows.forEach(r=>{if(r.predicted_crop)cropFreq[r.predicted_crop]=(cropFreq[r.predicted_crop]||0)+1;});
+  const top=Object.entries(cropFreq).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('sumTopCrop').textContent=top?top[0].charAt(0).toUpperCase()+top[0].slice(1):'—';
+  document.getElementById('sumLatest').textContent=rows[0]?formatDate(rows[0].created_at).split(',')[0]:'—';
+
+  let html=`<table class="hist-table"><thead><tr><th>#</th><th>Date</th><th>Recommendation</th><th>Best Model</th><th>Parameters</th></tr></thead><tbody>`;
+  rows.forEach((r,i)=>{
+    const crop=r.predicted_crop||'—';
+    const capCrop=crop.charAt(0).toUpperCase()+crop.slice(1);
+    html+=`<tr>
+      <td style="color:var(--gray);font-size:0.8rem;">${rows.length-i}</td>
+      <td style="font-size:0.82rem;color:var(--gray);">${formatDate(r.created_at)}</td>
+      <td><span class="crop-badge">🌾 ${capCrop}</span></td>
+      <td style="font-size:0.82rem;">${r.best_model?r.best_model.replace(/_/g,' ').replace(/\b\w/g,l=>l.toUpperCase()):'—'}</td>
+      <td><div class="param-mini">
+        <span class="param-chip">N <strong>${r.nitrogen??'—'}</strong></span>
+        <span class="param-chip">P <strong>${r.phosphorus??'—'}</strong></span>
+        <span class="param-chip">K <strong>${r.potassium??'—'}</strong></span>
+        <span class="param-chip">pH <strong>${r.ph??'—'}</strong></span>
+        <span class="param-chip">Temp <strong>${r.temperature??'—'}°C</strong></span>
+        <span class="param-chip">Rain <strong>${r.rainfall??'—'}mm</strong></span>
+      </div></td>
+    </tr>`;
+  });
+  html+='</tbody></table>';
+  document.getElementById('historyBody').innerHTML=html;
+}
+
+document.getElementById('refreshBtn').addEventListener('click',()=>{
+  document.getElementById('historyBody').innerHTML='<div class="loading-state"><div class="spinner-sm"></div><p>Loading history…</p></div>';
+  loadHistory();
+});
+
+loadHistory();
+</script>
+</body>
 </html>

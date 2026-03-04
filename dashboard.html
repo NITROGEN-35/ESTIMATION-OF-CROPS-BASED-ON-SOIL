@@ -3,160 +3,1060 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Crop Estimation Dashboard</title>
+    <title>CropSense — Dashboard</title>
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
-      rel="stylesheet"
-    />
-    <!-- box icons -->
-    <link
-      href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css"
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap"
       rel="stylesheet"
     />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
     />
-    <link rel="stylesheet" href="style.css" />
-
-    <!-- Chart.js CDN (add once) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      :root {
+        --green: #1a7a4a;
+        --green-light: #2db56e;
+        --green-pale: #e8f7ee;
+        --green-mid: #c2ecd5;
+        --amber: #e07b24;
+        --amber-pale: #fef3e8;
+        --blue: #1e5fa8;
+        --blue-pale: #e8f0fb;
+        --dark: #111b14;
+        --gray: #6b7280;
+        --gray-light: #f4f6f4;
+        --white: #ffffff;
+        --border: #d4e8da;
+        --sidebar-w: 240px;
+      }
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "DM Sans", sans-serif;
+        background: #f0f7f2;
+        color: var(--dark);
+        display: flex;
+        min-height: 100vh;
+      }
+      .sidebar {
+        width: var(--sidebar-w);
+        background: var(--dark);
+        display: flex;
+        flex-direction: column;
+        padding: 24px 0;
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        z-index: 50;
+      }
+      .sidebar-brand {
+        font-family: "Syne", sans-serif;
+        font-weight: 800;
+        font-size: 1.1rem;
+        color: white;
+        padding: 0 24px 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+      }
+      .sidebar nav {
+        flex: 1;
+        padding: 16px 0;
+      }
+      .sidebar nav a {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 11px 24px;
+        color: rgba(255, 255, 255, 0.6);
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.15s;
+        border-left: 3px solid transparent;
+      }
+      .sidebar nav a:hover {
+        color: white;
+        background: rgba(255, 255, 255, 0.07);
+      }
+      .sidebar nav a.active {
+        color: #7fe8b0;
+        border-left-color: #7fe8b0;
+        background: rgba(127, 232, 176, 0.08);
+      }
+      .sidebar-footer {
+        padding: 16px 24px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .user-pill {
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        padding: 10px 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .user-avatar {
+        width: 32px;
+        height: 32px;
+        background: var(--green-light);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        font-size: 0.8rem;
+        color: white;
+      }
+      .user-name {
+        font-size: 0.82rem;
+        color: white;
+        font-weight: 500;
+      }
+      .user-email {
+        font-size: 0.72rem;
+        color: rgba(255, 255, 255, 0.45);
+      }
+      .main {
+        margin-left: var(--sidebar-w);
+        flex: 1;
+        padding: 32px;
+        max-width: 1200px;
+      }
+      .page-header {
+        margin-bottom: 28px;
+      }
+      .page-header h1 {
+        font-family: "Syne", sans-serif;
+        font-size: 1.7rem;
+        font-weight: 800;
+      }
+      .page-header p {
+        color: var(--gray);
+        margin-top: 4px;
+      }
+      .dash-grid {
+        display: grid;
+        grid-template-columns: 380px 1fr;
+        gap: 24px;
+        align-items: start;
+      }
+      .card {
+        background: white;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+      }
+      .card-header {
+        padding: 20px 24px 16px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .card-title {
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        font-size: 0.95rem;
+      }
+      .card-body {
+        padding: 20px 24px;
+      }
+      .form-group {
+        margin-bottom: 16px;
+      }
+      .form-group label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.83rem;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      .range-hint {
+        color: var(--gray);
+        font-weight: 400;
+        font-size: 0.78rem;
+      }
+      .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      input[type="range"] {
+        flex: 1;
+        height: 5px;
+        accent-color: var(--green);
+        cursor: pointer;
+      }
+      .slider-val {
+        min-width: 54px;
+        text-align: right;
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        font-size: 0.88rem;
+        color: var(--green);
+      }
+      .predict-btn {
+        width: 100%;
+        padding: 14px;
+        background: var(--green);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        font-size: 1rem;
+        transition: background 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 6px;
+      }
+      .predict-btn:hover {
+        background: #155e3a;
+      }
+      .predict-btn:disabled {
+        background: var(--gray);
+        cursor: not-allowed;
+      }
+      .spinner-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(17, 27, 20, 0.65);
+        z-index: 200;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .spinner-overlay.active {
+        display: flex;
+      }
+      .spinner {
+        width: 52px;
+        height: 52px;
+        border: 4px solid rgba(255, 255, 255, 0.2);
+        border-top-color: #7fe8b0;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      .spinner-text {
+        color: white;
+        font-family: "Syne", sans-serif;
+        font-size: 0.9rem;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .results-panel {
+        display: none;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .results-panel.visible {
+        display: flex;
+      }
+      .rec-hero {
+        background: linear-gradient(135deg, #0d4a28 0%, var(--green) 100%);
+        border-radius: 18px;
+        padding: 28px;
+        color: white;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+      }
+      .rec-label {
+        font-size: 0.72rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        opacity: 0.7;
+        margin-bottom: 8px;
+      }
+      .rec-crop {
+        font-family: "Syne", sans-serif;
+        font-size: 2.4rem;
+        font-weight: 800;
+        line-height: 1;
+        margin-bottom: 4px;
+      }
+      .rec-why {
+        font-size: 0.88rem;
+        opacity: 0.8;
+        max-width: 380px;
+        margin: 12px auto 0;
+      }
+      .rec-confidence {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 100px;
+        padding: 4px 14px;
+        font-size: 0.78rem;
+        margin-top: 14px;
+      }
+      .rec-confidence strong {
+        color: #7fe8b0;
+      }
+      .gauge-wrap {
+        text-align: center;
+        padding: 10px 0;
+      }
+      .gauge-canvas-wrap {
+        position: relative;
+        width: 180px;
+        height: 100px;
+        margin: 0 auto;
+      }
+      .gauge-score {
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        font-family: "Syne", sans-serif;
+        font-size: 2rem;
+        font-weight: 800;
+      }
+      .gauge-label {
+        font-size: 0.8rem;
+        color: var(--gray);
+        margin-top: 8px;
+        font-weight: 600;
+      }
+      .top3-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .top3-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: var(--gray-light);
+        border-radius: 12px;
+        padding: 12px 16px;
+      }
+      .top3-rank {
+        font-family: "Syne", sans-serif;
+        font-weight: 800;
+        font-size: 1.1rem;
+        width: 28px;
+        text-align: center;
+        color: var(--gray);
+      }
+      .top3-rank.r1 {
+        color: var(--green);
+      }
+      .top3-crop {
+        flex: 1;
+        font-weight: 600;
+        font-size: 0.92rem;
+      }
+      .top3-bar-wrap {
+        flex: 2;
+      }
+      .top3-bar {
+        height: 6px;
+        background: var(--green-mid);
+        border-radius: 100px;
+      }
+      .top3-bar.top {
+        background: var(--green);
+      }
+      .top3-pct {
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        font-size: 0.8rem;
+        color: var(--green);
+        margin-left: 8px;
+      }
+      .model-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+      }
+      .model-table th {
+        text-align: left;
+        padding: 8px 12px;
+        color: var(--gray);
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid var(--border);
+      }
+      .model-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #f0f5f2;
+      }
+      .model-table tr:last-child td {
+        border: none;
+      }
+      .badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 100px;
+        font-size: 0.72rem;
+        font-weight: 600;
+      }
+      .badge-green {
+        background: var(--green-pale);
+        color: var(--green);
+      }
+      .badge-gray {
+        background: var(--gray-light);
+        color: var(--gray);
+      }
+      .badge-best {
+        background: var(--green);
+        color: white;
+      }
+      .fert-grid {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .fert-card {
+        flex: 1;
+        min-width: 80px;
+        border-radius: 12px;
+        padding: 14px 10px;
+        text-align: center;
+      }
+      .fert-card.ok {
+        background: var(--green-pale);
+      }
+      .fert-card.low {
+        background: #fdecea;
+      }
+      .fert-card.high {
+        background: var(--amber-pale);
+      }
+      .fert-nutrient {
+        font-family: "Syne", sans-serif;
+        font-weight: 800;
+        font-size: 1.2rem;
+      }
+      .fert-status {
+        font-size: 0.72rem;
+        font-weight: 600;
+        margin-top: 4px;
+      }
+      .fert-card.ok .fert-status {
+        color: var(--green);
+      }
+      .fert-card.low .fert-status {
+        color: #c0392b;
+      }
+      .fert-card.high .fert-status {
+        color: var(--amber);
+      }
+      .fert-diff {
+        font-size: 0.7rem;
+        color: var(--gray);
+        margin-top: 2px;
+      }
+      .fert-advice {
+        background: var(--amber-pale);
+        border-radius: 12px;
+        padding: 14px;
+        font-size: 0.85rem;
+        margin-top: 10px;
+        color: #7a4a10;
+        line-height: 1.5;
+      }
+      .chart-wrap {
+        position: relative;
+        height: 220px;
+      }
+      .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--gray);
+      }
+      .empty-icon {
+        font-size: 2.5rem;
+        margin-bottom: 12px;
+        opacity: 0.4;
+      }
+      #toast {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 300;
+        padding: 12px 20px;
+        border-radius: 10px;
+        color: white;
+        font-family: "Syne", sans-serif;
+        font-size: 0.85rem;
+        font-weight: 600;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        display: none;
+        max-width: 320px;
+      }
+      #toast.show {
+        display: block;
+        animation: fadeUp 0.3s ease;
+      }
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
   </head>
   <body>
-    <!-- Top Navigation -->
-    <nav style="margin-bottom: 2em; text-align: center">
-      <a href="dashboard.html">Dashboard</a> |
-      <a href="history.html">History</a> | <a href="#">Settings</a> |
-      <a href="signout.html">Logout</a>
-    </nav>
-    <!-- Mobile Header -->
-    <div class="header">
-      <h2>Crop Estimator</h2>
-      <div class="bx bx-menu" id="menu-icon"></div>
-    </div>
-
-    <!-- Overlay for mobile -->
-    <div class="overlay" id="overlay"></div>
-
-    <!-- Sidebar -->
-    <div class="sidebar" id="sidebar">
-      <h2>Crop Estimator</h2>
-      <a href="#">Dashboard</a>
-      <a href="#">Soil Analysis</a>
-      <a href="history.html">History</a>
-      <a href="#">Settings</a>
-      <a href="signout.html">Logout</a>
-    </div>
-
-    <div class="main">
-      <h1>Crop Estimation Dashboard</h1>
-
-      <div class="form-section">
-        <h2>Enter Soil Parameters</h2>
-        <form id="soilForm">
-          <div class="form-group">
-            <label for="N">Nitrogen (N)</label>
-            <input type="number" id="N" required />
-          </div>
-          <div class="form-group">
-            <label for="P">Phosphorus (P)</label>
-            <input type="number" id="P" required />
-          </div>
-          <div class="form-group">
-            <label for="K">Potassium (K)</label>
-            <input type="number" id="K" required />
-          </div>
-          <div class="form-group">
-            <label for="temperature">Temperature (°C)</label>
-            <input type="number" step="0.1" id="temperature" required />
-          </div>
-          <div class="form-group">
-            <label for="humidity">Humidity (%)</label>
-            <input type="number" step="0.1" id="humidity" required />
-          </div>
-          <div class="form-group">
-            <label for="ph">Soil pH</label>
-            <input type="number" step="0.1" id="ph" required />
-          </div>
-          <div class="form-group">
-            <label for="rainfall">Rainfall (mm)</label>
-            <input type="number" step="0.1" id="rainfall" required />
-          </div>
-          <button class="submit-btn" type="submit">Estimate Crops</button>
-        </form>
-
-        <!-- ====== Research Dashboard: Model Comparison & Soil Visuals ====== -->
-        <div id="research-dashboard" style="margin-top: 20px">
-          <h3>Model Comparison (votes)</h3>
-          <canvas id="modelComparisonChart" width="600" height="250"></canvas>
-
-          <h3 style="margin-top: 12px">Majority-vote Recommendation</h3>
-          <div
-            id="majorityResult"
-            style="font-size: 1.25rem; font-weight: 700; padding: 8px 0"
-          >
-            —
-          </div>
-
-          <h3 style="margin-top: 12px">Soil Data (input)</h3>
-          <canvas id="soilDataChart" width="600" height="250"></canvas>
-
-          <h4 style="margin-top: 12px">Raw Model Predictions</h4>
-          <table
-            id="predictionsTable"
-            class="pred-table"
-            style="width: 100%; border-collapse: collapse; margin-top: 6px"
-          >
-            <thead>
-              <tr>
-                <th style="text-align: left; padding: 6px">Model</th>
-                <th style="text-align: left; padding: 6px">Predicted Crop</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <!-- Best model highlight card (inserted) -->
-        <div
-          id="best-model-card"
-          style="margin: 18px 0; display: flex; align-items: center; gap: 18px"
+    <aside class="sidebar">
+      <a class="sidebar-brand" href="index.html">🌾 CropSense</a>
+      <nav>
+        <a href="dashboard.html" class="active"
+          ><i class="fas fa-th-large fa-fw"></i> Dashboard</a
         >
-          <div id="best-model-badge" class="best-badge">
-            <span id="best-percent">--%</span>
-          </div>
-
-          <div style="flex: 1">
-            <div style="font-size: 18px; font-weight: 700; color: #2b7a4b">
-              Top recommendation
-            </div>
-            <div
-              id="best-model-name"
-              style="font-size: 20px; font-weight: 800; margin-top: 6px"
-            >
-              —
-            </div>
-            <div
-              id="best-model-sub"
-              style="color: #555; margin-top: 6px; font-size: 14px"
-            >
-              Model: <span id="best-model-source">—</span>
-            </div>
-          </div>
-
-          <div style="display: flex; gap: 10px; align-items: center">
-            <button id="moreInfoBtn" class="btn small">More info</button>
-            <button id="compareBtn" class="btn small secondary">Compare</button>
+        <a href="research.html"><i class="fas fa-flask fa-fw"></i> Research</a>
+        <a href="history.html"><i class="fas fa-history fa-fw"></i> History</a>
+        <a href="profile.html"><i class="fas fa-user fa-fw"></i> Profile</a>
+        <a href="#" id="logoutBtn"
+          ><i class="fas fa-sign-out-alt fa-fw"></i> Logout</a
+        >
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-pill">
+          <div class="user-avatar" id="userAvatar">U</div>
+          <div>
+            <div class="user-name" id="userName">User</div>
+            <div class="user-email" id="userEmail">—</div>
           </div>
         </div>
-        <!-- end Best model highlight card -->
       </div>
-
-      <div class="results" id="results">
-        <h3>Estimated Suitable Crops</h3>
-        <!-- Results will be injected here -->
-      </div>
+    </aside>
+    <div class="spinner-overlay" id="spinnerOverlay">
+      <div class="spinner"></div>
+      <div class="spinner-text">Analyzing soil with 8 ML models…</div>
     </div>
-    <script src="chart.js"></script>
+    <div id="toast"></div>
+    <main class="main">
+      <div class="page-header">
+        <h1>🌾 Crop Dashboard</h1>
+        <p>
+          Enter your soil parameters to get AI-powered crop recommendations from
+          8 models.
+        </p>
+      </div>
+      <div class="dash-grid">
+        <div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Soil Parameters</span>
+              <span style="font-size: 0.75rem; color: var(--gray)"
+                >Slide to set values</span
+              >
+            </div>
+            <div class="card-body">
+              <form id="soilForm">
+                <div class="form-group">
+                  <label
+                    >Nitrogen (N)
+                    <span class="range-hint">0–200 kg/ha</span></label
+                  >
+                  <div class="slider-row">
+                    <input
+                      type="range"
+                      id="N"
+                      min="0"
+                      max="200"
+                      step="1"
+                      value="60"
+                      oninput="sv('N', this.value)"
+                    /><span class="slider-val" id="N_v">60</span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label
+                    >Phosphorus (P)
+                    <span class="range-hint">0–200 kg/ha</span></label
+                  >
+                  <div class="slider-row">
+                    <input
+                      type="range"
+                      id="P"
+                      min="0"
+                      max="200"
+                      step="1"
+                      value="40"
+                      oninput="sv('P', this.value)"
+                    /><span class="slider-val" id="P_v">40</span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label
+                    >Potassium (K)
+                    <span class="range-hint">0–200 kg/ha</span></label
+                  >
+                  <div class="slider-row">
+                    <input
+                      type="range"
+                      id="K"
+                      min="0"
+                      max="200"
+                      step="1"
+                      value="40"
+                      oninput="sv('K', this.value)"
+                    /><span class="slider-val" id="K_v">40</span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label
+                    >Temperature
+                    <span class="range-hint">-20–60 °C</span></label
+                  >
+                  <div class="slider-row">
+                    <input
+                      type="range"
+                      id="temperature"
+                      min="-20"
+                      max="60"
+                      step="0.5"
+                      value="25"
+                      oninput="sv('temperature', this.value, '°C')"
+                    /><span class="slider-val" id="temperature_v">25°C</span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label
+                    >Humidity <span class="range-hint">0–100 %</span></label
+                  >
+                  <div class="slider-row">
+                    <input
+                      type="range"
+                      id="humidity"
+                      min="0"
+                      max="100"
+                      step="0.5"
+                      value="65"
+                      oninput="sv('humidity', this.value, '%')"
+                    /><span class="slider-val" id="humidity_v">65%</span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Soil pH <span class="range-hint">0–14</span></label>
+                  <div class="slider-row">
+                    <input
+                      type="range"
+                      id="ph"
+                      min="0"
+                      max="14"
+                      step="0.1"
+                      value="6.5"
+                      oninput="sv('ph', this.value)"
+                    /><span class="slider-val" id="ph_v">6.5</span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label
+                    >Rainfall <span class="range-hint">0–500 mm</span></label
+                  >
+                  <div class="slider-row">
+                    <input
+                      type="range"
+                      id="rainfall"
+                      min="0"
+                      max="500"
+                      step="1"
+                      value="100"
+                      oninput="sv('rainfall', this.value, 'mm')"
+                    /><span class="slider-val" id="rainfall_v">100mm</span>
+                  </div>
+                </div>
+                <button type="submit" class="predict-btn" id="predictBtn">
+                  <i class="fas fa-seedling"></i> Estimate Crop
+                </button>
+              </form>
+            </div>
+          </div>
+          <div
+            class="card"
+            id="gaugeCard"
+            style="margin-top: 20px; display: none"
+          >
+            <div class="card-header">
+              <span class="card-title">🌡️ Soil Health Score</span>
+            </div>
+            <div class="card-body gauge-wrap">
+              <div class="gauge-canvas-wrap">
+                <canvas id="gaugeCanvas" width="180" height="100"></canvas>
+                <div class="gauge-score" id="gaugeScore">—</div>
+              </div>
+              <div class="gauge-label" id="gaugeLabel">—</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="card" id="emptyState">
+            <div class="card-body empty-state">
+              <div class="empty-icon">🌾</div>
+              <p>
+                Enter soil parameters on the left and click
+                <strong>Estimate Crop</strong> to see AI predictions from all 8
+                models.
+              </p>
+            </div>
+          </div>
+          <div class="results-panel" id="resultsPanel">
+            <div class="rec-hero">
+              <div class="rec-label">Recommended Crop</div>
+              <div class="rec-crop" id="recCrop">—</div>
+              <div class="rec-why" id="recWhy">—</div>
+              <div class="rec-confidence" id="recConf">—</div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">🏆 Top Crops by Model Votes</span>
+              </div>
+              <div class="card-body">
+                <div class="top3-list" id="top3List"></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">📊 Vote Distribution</span>
+              </div>
+              <div class="card-body">
+                <div class="chart-wrap"><canvas id="votesChart"></canvas></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">🤖 All Model Predictions</span>
+              </div>
+              <div class="card-body">
+                <table class="model-table">
+                  <thead>
+                    <tr>
+                      <th>Model</th>
+                      <th>Prediction</th>
+                      <th>Accuracy</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="modelTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">💊 Fertilizer Guidance</span>
+              </div>
+              <div class="card-body" id="fertPanel"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
     <script src="script.js"></script>
+    <script>
+      const API_BASE = "http://127.0.0.1:5000";
+      const CROP_NPK = {
+        rice: { N: [80, 120], P: [40, 60], K: [40, 60] },
+        maize: { N: [80, 120], P: [40, 60], K: [40, 60] },
+        chickpea: { N: [30, 60], P: [60, 90], K: [60, 90] },
+        kidneybeans: { N: [20, 40], P: [60, 90], K: [40, 60] },
+        pigeonpeas: { N: [20, 40], P: [60, 90], K: [40, 60] },
+        mothbeans: { N: [20, 40], P: [40, 60], K: [20, 40] },
+        mungbean: { N: [20, 40], P: [40, 60], K: [20, 40] },
+        blackgram: { N: [20, 40], P: [40, 60], K: [20, 40] },
+        lentil: { N: [20, 40], P: [60, 90], K: [40, 60] },
+        pomegranate: { N: [40, 60], P: [40, 60], K: [40, 60] },
+        banana: { N: [100, 140], P: [60, 80], K: [100, 140] },
+        mango: { N: [40, 80], P: [40, 60], K: [40, 60] },
+        grapes: { N: [60, 80], P: [40, 60], K: [60, 80] },
+        watermelon: { N: [60, 80], P: [40, 60], K: [40, 60] },
+        muskmelon: { N: [60, 80], P: [40, 60], K: [40, 60] },
+        apple: { N: [40, 60], P: [40, 60], K: [60, 80] },
+        orange: { N: [60, 80], P: [40, 60], K: [40, 60] },
+        papaya: { N: [60, 80], P: [40, 60], K: [40, 60] },
+        coconut: { N: [80, 100], P: [40, 60], K: [80, 100] },
+        cotton: { N: [80, 120], P: [40, 60], K: [40, 60] },
+        jute: { N: [60, 80], P: [40, 60], K: [40, 60] },
+        coffee: { N: [60, 80], P: [40, 60], K: [60, 80] },
+      };
+      const MODEL_NAMES = {
+        random_forest: "Random Forest",
+        decision_tree: "Decision Tree",
+        svm: "SVM",
+        logistic_regression: "Logistic Regression",
+        naive_bayes: "Naive Bayes",
+        knn: "KNN",
+        gradient_boost: "Gradient Boost",
+        adaboost: "AdaBoost",
+      };
+
+      function sv(id, val, unit = "") {
+        document.getElementById(id + "_v").textContent = val + unit;
+      }
+      function showToast(msg, type = "info") {
+        const c = { info: "#2b7a4b", error: "#c0392b", warn: "#d68910" };
+        const t = document.getElementById("toast");
+        t.textContent = msg;
+        t.style.background = c[type] || c.info;
+        t.className = "show";
+        setTimeout(() => (t.className = ""), 4000);
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const name = localStorage.getItem("full_name") || "User";
+        const email = localStorage.getItem("user_email") || "";
+        document.getElementById("userName").textContent = name;
+        document.getElementById("userEmail").textContent = email;
+        document.getElementById("userAvatar").textContent = name
+          .charAt(0)
+          .toUpperCase();
+        document.getElementById("logoutBtn").addEventListener("click", (e) => {
+          e.preventDefault();
+          clearSession();
+          window.location.href = "signin.html";
+        });
+      });
+
+      document
+        .getElementById("soilForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const body = {
+            N: +document.getElementById("N").value,
+            P: +document.getElementById("P").value,
+            K: +document.getElementById("K").value,
+            temperature: +document.getElementById("temperature").value,
+            humidity: +document.getElementById("humidity").value,
+            ph: +document.getElementById("ph").value,
+            rainfall: +document.getElementById("rainfall").value,
+          };
+          document.getElementById("spinnerOverlay").classList.add("active");
+          document.getElementById("predictBtn").disabled = true;
+          try {
+            const res = await apiFetch(`${API_BASE}/predict`, {
+              method: "POST",
+              body: JSON.stringify(body),
+            });
+            if (!res.ok) {
+              const err = await res.json();
+              showToast(err.error || "Prediction failed", "error");
+              return;
+            }
+            const data = await res.json();
+            renderResults(data, body);
+          } catch (err) {
+            showToast("Network error — is backend running?", "error");
+            console.error(err);
+          } finally {
+            document
+              .getElementById("spinnerOverlay")
+              .classList.remove("active");
+            document.getElementById("predictBtn").disabled = false;
+          }
+        });
+
+      function renderResults(data, inputs) {
+        const { predictions, accuracies, votes, best_model, recommended_crop } =
+          data;
+        const crop = recommended_crop || "—";
+        const cropLow = crop.toLowerCase();
+        const totalVotes = Object.values(votes).reduce((a, b) => a + b, 0);
+        document.getElementById("emptyState").style.display = "none";
+        document.getElementById("resultsPanel").classList.add("visible");
+        document.getElementById("gaugeCard").style.display = "block";
+
+        // Hero
+        document.getElementById("recCrop").textContent = crop.toUpperCase();
+        const bv = votes[crop] || 0;
+        document.getElementById("recConf").innerHTML =
+          `<strong>${bv}/${totalVotes}</strong> models agree`;
+        document.getElementById("recWhy").textContent = buildWhy(crop, inputs);
+
+        // Top crops
+        const sorted = Object.entries(votes).sort((a, b) => b[1] - a[1]);
+        const maxV = sorted[0] ? sorted[0][1] : 1;
+        const top3 = document.getElementById("top3List");
+        top3.innerHTML = "";
+        sorted.slice(0, 3).forEach(([c, v], i) => {
+          const pct = Math.round((v / totalVotes) * 100);
+          top3.innerHTML += `<div class="top3-item"><div class="top3-rank ${i === 0 ? "r1" : ""}">${i + 1}</div><div class="top3-crop">${c.charAt(0).toUpperCase() + c.slice(1)}</div><div class="top3-bar-wrap"><div class="top3-bar ${i === 0 ? "top" : ""}" style="width:${((v / maxV) * 100).toFixed(0)}%"></div></div><div class="top3-pct">${pct}%</div></div>`;
+        });
+
+        // Votes chart
+        const cl = Object.keys(votes).map(
+          (c) => c.charAt(0).toUpperCase() + c.slice(1),
+        );
+        const cv = Object.values(votes);
+        if (window._vc) window._vc.destroy();
+        window._vc = new Chart(
+          document.getElementById("votesChart").getContext("2d"),
+          {
+            type: "bar",
+            data: {
+              labels: cl,
+              datasets: [
+                {
+                  data: cv,
+                  backgroundColor: cl.map((_, i) =>
+                    i === 0 ? "#1a7a4a" : "#c2ecd5",
+                  ),
+                  borderRadius: 6,
+                  borderSkipped: false,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: { stepSize: 1, precision: 0 },
+                  grid: { color: "#f0f5f2" },
+                },
+                x: { grid: { display: false } },
+              },
+            },
+          },
+        );
+
+        // Model table
+        const tbody = document.getElementById("modelTableBody");
+        tbody.innerHTML = "";
+        Object.entries(predictions).forEach(([key, pred]) => {
+          const isBest = key === best_model;
+          const matches = pred.toLowerCase() === cropLow;
+          tbody.innerHTML += `<tr><td>${MODEL_NAMES[key] || key}${isBest ? " 🏆" : ""}</td><td><strong>${pred.charAt(0).toUpperCase() + pred.slice(1)}</strong></td><td>${accuracies[key] || "—"}%</td><td><span class="badge ${isBest ? "badge-best" : matches ? "badge-green" : "badge-gray"}">${isBest ? "Best" : matches ? "Agrees" : "Differs"}</span></td></tr>`;
+        });
+
+        // Fertilizer
+        renderFert(cropLow, inputs);
+
+        // Gauge
+        const score = computeHealth(cropLow, inputs);
+        renderGauge(score);
+      }
+
+      function buildWhy(crop, inp) {
+        const parts = [];
+        if (inp.rainfall > 150) parts.push(`high rainfall (${inp.rainfall}mm)`);
+        if (inp.humidity > 70) parts.push(`high humidity (${inp.humidity}%)`);
+        if (inp.temperature >= 20 && inp.temperature <= 35)
+          parts.push(`suitable temperature (${inp.temperature}°C)`);
+        if (inp.ph >= 5.5 && inp.ph <= 7.5) parts.push(`good pH (${inp.ph})`);
+        return parts.length > 0
+          ? `Your ${parts.slice(0, -1).join(", ")}${parts.length > 1 ? " and " : ""}${parts.slice(-1)} match ideal growing conditions for ${crop}.`
+          : `Based on your soil and climate parameters, ${crop} is the best match among 22 crop types.`;
+      }
+
+      function computeHealth(cropLow, inp) {
+        const ideal = CROP_NPK[cropLow];
+        if (!ideal) return 65;
+        let score = 0,
+          total = 0;
+        const chk = (val, [lo, hi]) => {
+          total += 100;
+          if (val >= lo && val <= hi) {
+            score += 100;
+          } else {
+            const dist = Math.min(Math.abs(val - lo), Math.abs(val - hi));
+            const range = hi - lo || 1;
+            score += Math.max(0, 100 - (dist / range) * 60);
+          }
+        };
+        chk(inp.N, ideal.N);
+        chk(inp.P, ideal.P);
+        chk(inp.K, ideal.K);
+        return Math.round((score / total) * 100);
+      }
+
+      function renderGauge(score) {
+        const canvas = document.getElementById("gaugeCanvas");
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const cx = 90,
+          cy = 90,
+          r = 70,
+          sw = 14;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, Math.PI, 2 * Math.PI);
+        ctx.strokeStyle = "#e8f7ee";
+        ctx.lineWidth = sw;
+        ctx.lineCap = "round";
+        ctx.stroke();
+        const color =
+          score >= 75 ? "#1a7a4a" : score >= 50 ? "#e07b24" : "#c0392b";
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, Math.PI, Math.PI + (score / 100) * Math.PI);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = sw;
+        ctx.lineCap = "round";
+        ctx.stroke();
+        document.getElementById("gaugeScore").textContent = score;
+        document.getElementById("gaugeScore").style.color = color;
+        document.getElementById("gaugeLabel").textContent =
+          score >= 75
+            ? "🟢 Good Match"
+            : score >= 50
+              ? "🟡 Fair Match"
+              : "🔴 Poor Match";
+      }
+
+      function renderFert(cropLow, inp) {
+        const ideal = CROP_NPK[cropLow];
+        const panel = document.getElementById("fertPanel");
+        if (!ideal) {
+          panel.innerHTML =
+            '<p style="color:var(--gray);font-size:0.88rem">No fertilizer data for this crop.</p>';
+          return;
+        }
+        const st = (val, [lo, hi]) => {
+          if (val < lo)
+            return {
+              cls: "low",
+              label: "Low",
+              diff: `+${Math.round(lo - val)} needed`,
+            };
+          if (val > hi)
+            return {
+              cls: "high",
+              label: "High",
+              diff: `-${Math.round(val - hi)} excess`,
+            };
+          return { cls: "ok", label: "Optimal", diff: "On target ✓" };
+        };
+        const n = st(inp.N, ideal.N),
+          p = st(inp.P, ideal.P),
+          k = st(inp.K, ideal.K);
+        const adv = [];
+        if (n.cls === "low") adv.push("Apply Urea (46-0-0) to boost Nitrogen.");
+        if (p.cls === "low")
+          adv.push("Apply DAP (18-46-0) to increase Phosphorus.");
+        if (k.cls === "low") adv.push("Apply MOP (0-0-60) to raise Potassium.");
+        if (n.cls === "high")
+          adv.push("Reduce N-fertilizer; excess nitrogen causes lodging.");
+        panel.innerHTML = `<div class="fert-grid"><div class="fert-card ${n.cls}"><div class="fert-nutrient">N</div><div class="fert-status">${n.label}</div><div class="fert-diff">${n.diff}</div></div><div class="fert-card ${p.cls}"><div class="fert-nutrient">P</div><div class="fert-status">${p.label}</div><div class="fert-diff">${p.diff}</div></div><div class="fert-card ${k.cls}"><div class="fert-nutrient">K</div><div class="fert-status">${k.label}</div><div class="fert-diff">${k.diff}</div></div></div>${adv.length ? `<div class="fert-advice">💡 ${adv.join(" ")}</div>` : ""}`;
+      }
+    </script>
   </body>
 </html>

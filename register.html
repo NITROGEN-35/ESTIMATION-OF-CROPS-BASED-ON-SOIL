@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CropSense — Create Account</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <style>
+      :root {
+        --green: #1a7a4a;
+        --green-light: #2db56e;
+        --green-pale: #e8f7ee;
+        --green-mid: #c2ecd5;
+        --dark: #111b14;
+        --gray: #6b7280;
+        --gray-light: #f4f6f4;
+        --border: #d4e8da;
+        --red: #c0392b;
+        --red-pale: #fdecea;
+      }
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "DM Sans", sans-serif;
+        background: linear-gradient(
+          135deg,
+          #0d4a28 0%,
+          #1a7a4a 55%,
+          #2db56e 100%
+        );
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      .auth-wrap {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        max-width: 960px;
+        width: 100%;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3);
+      }
+      .auth-left {
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(12px);
+        padding: 48px 40px;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .auth-brand {
+        font-family: "Syne", sans-serif;
+        font-weight: 800;
+        font-size: 1.3rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 40px;
+      }
+      .auth-left h2 {
+        font-family: "Syne", sans-serif;
+        font-size: 1.9rem;
+        font-weight: 800;
+        line-height: 1.15;
+        margin-bottom: 16px;
+      }
+      .auth-left p {
+        opacity: 0.75;
+        font-size: 0.92rem;
+        line-height: 1.6;
+        margin-bottom: 32px;
+      }
+      .auth-perks {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .perk {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 0.88rem;
+        opacity: 0.85;
+      }
+      .perk-icon {
+        width: 32px;
+        height: 32px;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .auth-right {
+        background: white;
+        padding: 48px 44px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .auth-right h3 {
+        font-family: "Syne", sans-serif;
+        font-weight: 800;
+        font-size: 1.5rem;
+        margin-bottom: 6px;
+      }
+      .auth-right .sub {
+        color: var(--gray);
+        font-size: 0.9rem;
+        margin-bottom: 28px;
+      }
+      .form-group {
+        margin-bottom: 18px;
+      }
+      .form-group label {
+        display: block;
+        font-size: 0.83rem;
+        font-weight: 600;
+        margin-bottom: 7px;
+        color: var(--dark);
+      }
+      .input-wrap {
+        position: relative;
+      }
+      .input-wrap i {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--gray);
+        font-size: 0.85rem;
+      }
+      .input-wrap input {
+        width: 100%;
+        padding: 11px 14px 11px 38px;
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
+        font-family: "DM Sans", sans-serif;
+        font-size: 0.9rem;
+        color: var(--dark);
+        outline: none;
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s;
+        background: #fafafa;
+      }
+      .input-wrap input:focus {
+        border-color: var(--green);
+        box-shadow: 0 0 0 3px rgba(26, 122, 74, 0.1);
+        background: white;
+      }
+      .input-wrap input.error {
+        border-color: var(--red);
+        box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.1);
+      }
+      .eye-btn {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--gray);
+        padding: 2px;
+      }
+      .field-error {
+        color: var(--red);
+        font-size: 0.75rem;
+        margin-top: 5px;
+        display: none;
+      }
+      .field-error.show {
+        display: block;
+      }
+      .password-strength {
+        height: 3px;
+        border-radius: 100px;
+        margin-top: 6px;
+        background: var(--border);
+        overflow: hidden;
+      }
+      .strength-fill {
+        height: 100%;
+        border-radius: 100px;
+        width: 0;
+        transition:
+          width 0.3s,
+          background 0.3s;
+      }
+      .strength-label {
+        font-size: 0.72rem;
+        color: var(--gray);
+        margin-top: 4px;
+      }
+      .submit-btn {
+        width: 100%;
+        padding: 13px;
+        background: var(--green);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        font-size: 0.95rem;
+        transition:
+          background 0.2s,
+          transform 0.1s;
+        margin-top: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      .submit-btn:hover {
+        background: #155e3a;
+      }
+      .submit-btn:active {
+        transform: scale(0.98);
+      }
+      .submit-btn:disabled {
+        background: var(--gray);
+        cursor: not-allowed;
+      }
+      .auth-switch {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 0.85rem;
+        color: var(--gray);
+      }
+      .auth-switch a {
+        color: var(--green);
+        font-weight: 600;
+        text-decoration: none;
+      }
+      .auth-switch a:hover {
+        text-decoration: underline;
+      }
+      #toast {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 300;
+        padding: 12px 20px;
+        border-radius: 10px;
+        color: white;
+        font-family: "Syne", sans-serif;
+        font-size: 0.85rem;
+        font-weight: 600;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        display: none;
+        max-width: 320px;
+      }
+      #toast.show {
+        display: block;
+        animation: fadeUp 0.3s ease;
+      }
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @media (max-width: 700px) {
+        .auth-wrap {
+          grid-template-columns: 1fr;
+        }
+        .auth-left {
+          display: none;
+        }
+        .auth-right {
+          padding: 36px 28px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="toast"></div>
+    <div class="auth-wrap">
+      <!-- LEFT PANEL -->
+      <div class="auth-left">
+        <div class="auth-brand">🌾 CropSense</div>
+        <h2>Start Making Smarter Farming Decisions</h2>
+        <p>
+          Join CropSense and get AI-powered crop recommendations from 8 machine
+          learning models — completely free.
+        </p>
+        <div class="auth-perks">
+          <div class="perk">
+            <div class="perk-icon"><i class="fas fa-seedling"></i></div>
+            8-model ensemble voting for reliable predictions
+          </div>
+          <div class="perk">
+            <div class="perk-icon"><i class="fas fa-history"></i></div>
+            Full prediction history saved to your account
+          </div>
+          <div class="perk">
+            <div class="perk-icon"><i class="fas fa-flask"></i></div>
+            Research dashboard with EDA &amp; model metrics
+          </div>
+          <div class="perk">
+            <div class="perk-icon"><i class="fas fa-vial"></i></div>
+            Fertilizer guidance &amp; soil health scoring
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL: REGISTER FORM -->
+      <div class="auth-right">
+        <h3>Create your account</h3>
+        <div class="sub">
+          Already have one? <a href="signin.html">Sign in</a>
+        </div>
+
+        <form id="registerForm" novalidate>
+          <!-- Full Name -->
+          <div class="form-group">
+            <label for="fullName">Full Name</label>
+            <div class="input-wrap">
+              <i class="fas fa-user"></i>
+              <input
+                type="text"
+                id="fullName"
+                placeholder="Ravi Kumar"
+                autocomplete="name"
+                required
+              />
+            </div>
+            <div class="field-error" id="nameErr">
+              Please enter your full name.
+            </div>
+          </div>
+
+          <!-- Email -->
+          <div class="form-group">
+            <label for="email">Email Address</label>
+            <div class="input-wrap">
+              <i class="fas fa-envelope"></i>
+              <input
+                type="email"
+                id="email"
+                placeholder="ravi@example.com"
+                autocomplete="email"
+                required
+              />
+            </div>
+            <div class="field-error" id="emailErr">
+              Please enter a valid email address.
+            </div>
+          </div>
+
+          <!-- Password -->
+          <div class="form-group">
+            <label for="password">Password</label>
+            <div class="input-wrap">
+              <i class="fas fa-lock"></i>
+              <input
+                type="password"
+                id="password"
+                placeholder="Min. 8 chars, 1 uppercase, 1 number"
+                autocomplete="new-password"
+                required
+                oninput="checkStrength(this.value)"
+              />
+              <button
+                type="button"
+                class="eye-btn"
+                id="eye1"
+                onclick="togglePwd('password', 'eye1')"
+              >
+                <i class="fas fa-eye-slash"></i>
+              </button>
+            </div>
+            <div class="password-strength">
+              <div class="strength-fill" id="strengthFill"></div>
+            </div>
+            <div class="strength-label" id="strengthLabel"></div>
+            <div class="field-error" id="pwdErr">
+              Password must be 8+ chars with 1 uppercase and 1 number.
+            </div>
+          </div>
+
+          <!-- Confirm Password -->
+          <div class="form-group">
+            <label for="confirmPassword">Confirm Password</label>
+            <div class="input-wrap">
+              <i class="fas fa-lock"></i>
+              <input
+                type="password"
+                id="confirmPassword"
+                placeholder="Repeat password"
+                autocomplete="new-password"
+                required
+              />
+              <button
+                type="button"
+                class="eye-btn"
+                id="eye2"
+                onclick="togglePwd('confirmPassword', 'eye2')"
+              >
+                <i class="fas fa-eye-slash"></i>
+              </button>
+            </div>
+            <div class="field-error" id="confirmErr">
+              Passwords do not match.
+            </div>
+          </div>
+
+          <button type="submit" class="submit-btn" id="registerBtn">
+            <i class="fas fa-user-plus"></i> Create Account
+          </button>
+        </form>
+
+        <div class="auth-switch">
+          By registering you agree to our <a href="#">Terms of Service</a>.
+        </div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+      function showToast(msg, type = "info") {
+        const c = { info: "#2b7a4b", error: "#c0392b", warn: "#d68910" };
+        const t = document.getElementById("toast");
+        t.textContent = msg;
+        t.style.background = c[type] || c.info;
+        t.className = "show";
+        setTimeout(() => (t.className = ""), 4500);
+      }
+
+      function togglePwd(inputId, btnId) {
+        const inp = document.getElementById(inputId);
+        const icon = document.querySelector("#" + btnId + " i");
+        if (inp.type === "password") {
+          inp.type = "text";
+          icon.className = "fas fa-eye";
+        } else {
+          inp.type = "password";
+          icon.className = "fas fa-eye-slash";
+        }
+      }
+
+      function checkStrength(pwd) {
+        const fill = document.getElementById("strengthFill");
+        const label = document.getElementById("strengthLabel");
+        let score = 0;
+        if (pwd.length >= 8) score++;
+        if (/[A-Z]/.test(pwd)) score++;
+        if (/[0-9]/.test(pwd)) score++;
+        if (/[^A-Za-z0-9]/.test(pwd)) score++;
+        const configs = [
+          { w: "0%", bg: "", text: "" },
+          { w: "25%", bg: "#c0392b", text: "Weak" },
+          { w: "50%", bg: "#e07b24", text: "Fair" },
+          { w: "75%", bg: "#2db56e", text: "Good" },
+          { w: "100%", bg: "#1a7a4a", text: "Strong ✓" },
+        ];
+        const c = configs[score] || configs[0];
+        fill.style.width = c.w;
+        fill.style.background = c.bg;
+        label.textContent = c.text;
+        label.style.color = c.bg;
+      }
+
+      function showErr(id, show) {
+        const el = document.getElementById(id);
+        el.classList.toggle("show", show);
+      }
+      function markField(inputId, error) {
+        document.getElementById(inputId).classList.toggle("error", error);
+      }
+
+      document
+        .getElementById("registerForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const fullName = document.getElementById("fullName").value.trim();
+          const email = document
+            .getElementById("email")
+            .value.trim()
+            .toLowerCase();
+          const password = document.getElementById("password").value;
+          const confirmPassword =
+            document.getElementById("confirmPassword").value;
+
+          let valid = true;
+          // Validate name
+          const nameOk = fullName.length > 1;
+          showErr("nameErr", !nameOk);
+          markField("fullName", !nameOk);
+          if (!nameOk) valid = false;
+          // Validate email
+          const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+          showErr("emailErr", !emailOk);
+          markField("email", !emailOk);
+          if (!emailOk) valid = false;
+          // Validate password
+          const pwdOk =
+            password.length >= 8 &&
+            /[A-Z]/.test(password) &&
+            /[0-9]/.test(password);
+          showErr("pwdErr", !pwdOk);
+          markField("password", !pwdOk);
+          if (!pwdOk) valid = false;
+          // Validate confirm
+          const confirmOk = password === confirmPassword;
+          showErr("confirmErr", !confirmOk);
+          markField("confirmPassword", !confirmOk);
+          if (!confirmOk) valid = false;
+
+          if (!valid) return;
+
+          const btn = document.getElementById("registerBtn");
+          btn.disabled = true;
+          btn.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> Creating account…';
+
+          try {
+            const res = await publicFetch("http://127.0.0.1:5000/register", {
+              method: "POST",
+              body: JSON.stringify({ fullName, email, password }),
+            });
+            const data = await res.json();
+            if (!res.ok)
+              throw new Error(
+                data.error || data.message || "Registration failed",
+              );
+            showToast("Account created! Redirecting to sign in…", "info");
+            setTimeout(() => {
+              window.location.href = "signin.html";
+            }, 1200);
+          } catch (err) {
+            showToast(err.message, "error");
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
+          }
+        });
+    </script>
+  </body>
+</html>

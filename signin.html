@@ -2,56 +2,417 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Sign In</title>
-    <link rel="stylesheet" href="style.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CropSense — Sign In</title>
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap"
       rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <style>
+      :root {
+        --green: #1a7a4a;
+        --green-light: #2db56e;
+        --green-pale: #e8f7ee;
+        --green-mid: #c2ecd5;
+        --dark: #111b14;
+        --gray: #6b7280;
+        --gray-light: #f4f6f4;
+        --border: #d4e8da;
+        --red: #c0392b;
+      }
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "DM Sans", sans-serif;
+        background: linear-gradient(
+          135deg,
+          #0d4a28 0%,
+          #1a7a4a 55%,
+          #2db56e 100%
+        );
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      .auth-wrap {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        max-width: 920px;
+        width: 100%;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3);
+      }
+      .auth-left {
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(12px);
+        padding: 48px 40px;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .auth-brand {
+        font-family: "Syne", sans-serif;
+        font-weight: 800;
+        font-size: 1.3rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 40px;
+        text-decoration: none;
+        color: white;
+      }
+      .auth-left h2 {
+        font-family: "Syne", sans-serif;
+        font-size: 1.9rem;
+        font-weight: 800;
+        line-height: 1.15;
+        margin-bottom: 16px;
+      }
+      .auth-left p {
+        opacity: 0.75;
+        font-size: 0.92rem;
+        line-height: 1.6;
+        margin-bottom: 32px;
+      }
+      .stat-chips {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .stat-chip {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 12px 16px;
+      }
+      .chip-val {
+        font-family: "Syne", sans-serif;
+        font-weight: 800;
+        font-size: 1.3rem;
+        color: #7fe8b0;
+        min-width: 60px;
+      }
+      .chip-label {
+        font-size: 0.85rem;
+        opacity: 0.85;
+      }
+      .auth-right {
+        background: white;
+        padding: 48px 44px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .auth-right h3 {
+        font-family: "Syne", sans-serif;
+        font-weight: 800;
+        font-size: 1.5rem;
+        margin-bottom: 6px;
+      }
+      .sub {
+        color: var(--gray);
+        font-size: 0.9rem;
+        margin-bottom: 28px;
+      }
+      .sub a {
+        color: var(--green);
+        font-weight: 600;
+        text-decoration: none;
+      }
+      .form-group {
+        margin-bottom: 20px;
+      }
+      .form-group label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.83rem;
+        font-weight: 600;
+        margin-bottom: 7px;
+      }
+      .form-group label a {
+        color: var(--green);
+        font-weight: 500;
+        text-decoration: none;
+        font-size: 0.8rem;
+      }
+      .input-wrap {
+        position: relative;
+      }
+      .input-wrap i.icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--gray);
+        font-size: 0.85rem;
+      }
+      .input-wrap input {
+        width: 100%;
+        padding: 11px 42px 11px 38px;
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
+        font-family: "DM Sans", sans-serif;
+        font-size: 0.9rem;
+        color: var(--dark);
+        outline: none;
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s;
+        background: #fafafa;
+      }
+      .input-wrap input:focus {
+        border-color: var(--green);
+        box-shadow: 0 0 0 3px rgba(26, 122, 74, 0.1);
+        background: white;
+      }
+      .eye-btn {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--gray);
+      }
+      .submit-btn {
+        width: 100%;
+        padding: 13px;
+        background: var(--green);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        font-size: 0.95rem;
+        transition: background 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      .submit-btn:hover {
+        background: #155e3a;
+      }
+      .submit-btn:disabled {
+        background: var(--gray);
+        cursor: not-allowed;
+      }
+      .auth-switch {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 0.88rem;
+        color: var(--gray);
+      }
+      .auth-switch a {
+        color: var(--green);
+        font-weight: 600;
+        text-decoration: none;
+      }
+      #toast {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 300;
+        padding: 12px 20px;
+        border-radius: 10px;
+        color: white;
+        font-family: "Syne", sans-serif;
+        font-size: 0.85rem;
+        font-weight: 600;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        display: none;
+        max-width: 320px;
+      }
+      #toast.show {
+        display: block;
+        animation: fadeUp 0.3s ease;
+      }
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @media (max-width: 700px) {
+        .auth-wrap {
+          grid-template-columns: 1fr;
+        }
+        .auth-left {
+          display: none;
+        }
+        .auth-right {
+          padding: 36px 28px;
+        }
+      }
+    </style>
   </head>
-  <body class="auth-body">
-    <div class="auth-container">
-      <div class="auth-card">
-        <h2>Sign In</h2>
-
-        <form id="signInForm">
-          <div class="form-group">
-            <label>Email</label>
-            <input type="email" id="email" required autocomplete="email" />
+  <body>
+    <div id="toast"></div>
+    <div class="auth-wrap">
+      <!-- LEFT PANEL -->
+      <div class="auth-left">
+        <a class="auth-brand" href="index.html">🌾 CropSense</a>
+        <h2>Welcome back, Farmer</h2>
+        <p>
+          Sign in to access your personalized crop recommendations and
+          prediction history.
+        </p>
+        <div class="stat-chips">
+          <div class="stat-chip">
+            <div class="chip-val">99.27%</div>
+            <div class="chip-label">Best model accuracy (Gradient Boost)</div>
           </div>
+          <div class="stat-chip">
+            <div class="chip-val">8</div>
+            <div class="chip-label">ML models vote on every prediction</div>
+          </div>
+          <div class="stat-chip">
+            <div class="chip-val">22</div>
+            <div class="chip-label">Crop types supported</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL -->
+      <div class="auth-right">
+        <h3>Sign in to your account</h3>
+        <p class="sub">
+          New here? <a href="register.html">Create a free account</a>
+        </p>
+
+        <form id="signInForm" novalidate>
           <div class="form-group">
-            <label>Password</label>
-            <div style="position: relative">
+            <label for="email">Email Address</label>
+            <div class="input-wrap">
+              <i class="fas fa-envelope icon"></i>
               <input
-                type="password"
-                id="password"
+                type="email"
+                id="email"
+                placeholder="ravi@example.com"
+                autocomplete="email"
                 required
-                autocomplete="current-password"
-              />
-              <img
-                id="eye-icon"
-                src="eye-close.png"
-                alt="toggle"
-                style="
-                  position: absolute;
-                  right: 10px;
-                  top: 50%;
-                  transform: translateY(-50%);
-                  cursor: pointer;
-                  width: 20px;
-                "
               />
             </div>
           </div>
-          <button type="submit" class="submit-btn">Login</button>
+
+          <div class="form-group">
+            <label for="password">
+              Password
+              <a href="#">Forgot password?</a>
+            </label>
+            <div class="input-wrap">
+              <i class="fas fa-lock icon"></i>
+              <input
+                type="password"
+                id="password"
+                placeholder="Your password"
+                autocomplete="current-password"
+                required
+              />
+              <button
+                type="button"
+                class="eye-btn"
+                id="eyeBtn"
+                onclick="togglePwd()"
+              >
+                <i class="fas fa-eye-slash"></i>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="submit-btn" id="loginBtn">
+            <i class="fas fa-sign-in-alt"></i> Sign In
+          </button>
         </form>
 
-        <p style="margin-top: 14px; text-align: center; font-size: 14px">
-          No account? <a href="indexl.html">Register</a>
-        </p>
+        <div class="auth-switch">
+          Don't have an account? <a href="register.html">Register for free</a>
+        </div>
       </div>
     </div>
 
     <script src="script.js"></script>
+    <script>
+      function showToast(msg, type = "info") {
+        const c = { info: "#2b7a4b", error: "#c0392b", warn: "#d68910" };
+        const t = document.getElementById("toast");
+        t.textContent = msg;
+        t.style.background = c[type] || c.info;
+        t.className = "show";
+        setTimeout(() => (t.className = ""), 4500);
+      }
+
+      function togglePwd() {
+        const inp = document.getElementById("password");
+        const icon = document.querySelector("#eyeBtn i");
+        if (inp.type === "password") {
+          inp.type = "text";
+          icon.className = "fas fa-eye";
+        } else {
+          inp.type = "password";
+          icon.className = "fas fa-eye-slash";
+        }
+      }
+
+      document
+        .getElementById("signInForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const email = document
+            .getElementById("email")
+            .value.trim()
+            .toLowerCase();
+          const password = document.getElementById("password").value;
+
+          if (!email || !password) {
+            showToast("Please fill in all fields.", "warn");
+            return;
+          }
+
+          const btn = document.getElementById("loginBtn");
+          btn.disabled = true;
+          btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in…';
+
+          try {
+            const res = await publicFetch("http://127.0.0.1:5000/login", {
+              method: "POST",
+              body: JSON.stringify({ email, password }),
+            });
+            const data = await res.json();
+            if (!res.ok)
+              throw new Error(data.error || data.message || "Login failed");
+            saveSession(data);
+            showToast("Welcome back! Redirecting…");
+            setTimeout(() => {
+              window.location.href = "dashboard.html";
+            }, 800);
+          } catch (err) {
+            showToast(err.message, "error");
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
+          }
+        });
+    </script>
   </body>
 </html>
