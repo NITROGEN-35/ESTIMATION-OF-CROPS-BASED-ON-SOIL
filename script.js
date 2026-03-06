@@ -152,12 +152,28 @@ async function publicFetch(url, options = {}) {
 // ACCESS GUARD — runs immediately on page load
 // ────────────────────────────────────────────
 (function guardProtectedPages() {
+
   const protectedPages = ["dashboard.html", "history.html", "profile.html", "admin.html"];
   const currentPage = window.location.pathname.split("/").pop();
+
+  // Not logged in
   if (protectedPages.includes(currentPage) && !isLoggedIn()) {
     toast("You must log in first.", "error");
     setTimeout(() => { window.location.href = "signin.html"; }, 800);
+    return;
   }
+
+  // Admin page protection
+  if (currentPage === "admin.html") {
+    const isAdmin = localStorage.getItem("is_admin");
+
+    if (isAdmin !== "1") {
+      toast("Access denied. Admins only.", "error");
+      setTimeout(() => { window.location.href = "dashboard.html"; }, 800);
+      return;
+    }
+  }
+
 })();
 
 // ────────────────────────────────────────────
@@ -229,10 +245,21 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   // ── Populate user info in navbar ─────────
-  const nameEl  = document.getElementById("nav-user-name");
-  const emailEl = document.getElementById("nav-user-email");
-  if (nameEl)  nameEl.textContent  = localStorage.getItem("full_name")  || "";
-  if (emailEl) emailEl.textContent = localStorage.getItem("user_email") || "";
+const nameEl  = document.getElementById("nav-user-name");
+const emailEl = document.getElementById("nav-user-email");
+if (nameEl)  nameEl.textContent  = localStorage.getItem("full_name")  || "";
+if (emailEl) emailEl.textContent = localStorage.getItem("user_email") || "";
+
+
+// ── Hide admin link for non-admins ───────
+const adminLink = document.getElementById("adminLink");
+
+if (adminLink) {
+  if (localStorage.getItem("is_admin") !== "1") {
+    adminLink.style.display = "none";
+  }
+}
+  
 
   // ── SIGN IN FORM ─────────────────────────
   const signInForm = document.getElementById("signInForm");
