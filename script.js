@@ -1,440 +1,286 @@
-// ================================================================
-// script.js — Single source of truth for auth + UI logic
-// Auth state = token existence ONLY. No isLoggedIn flag anywhere.
-// ================================================================
-
-const API = "http://127.0.0.1:5000";
-
-// ────────────────────────────────────────────
-// TOAST NOTIFICATIONS (replaces all alert())
-// ────────────────────────────────────────────
-function toast(msg, type = "info") {
-  const colors = { info: "#2b7a4b", error: "#c0392b", warn: "#d68910" };
-  const t = document.createElement("div");
-  t.textContent = msg;
-  t.style.cssText = `
-    position:fixed; bottom:24px; right:24px;
-    padding:12px 20px; border-radius:8px; color:#fff;
-    background:${colors[type] || colors.info};
-    font-family:Inter,sans-serif; font-size:14px;
-    box-shadow:0 4px 12px rgba(0,0,0,0.25);
-    z-index:9999; max-width:340px; line-height:1.4;
-  `;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 4000);
-}
-
-// ────────────────────────────────────────────
-// DATE FORMATTER
-// ────────────────────────────────────────────
+// ================= Utility =================
 function formatUTCtoLocal(utcString) {
   if (!utcString) return "";
-  let s = utcString.includes("T") ? utcString : utcString.replace(" ", "T");
-  if (!s.endsWith("Z")) s += "Z";
-  const d = new Date(s);
-  return isNaN(d.getTime()) ? "Invalid Date" : d.toLocaleString();
+  let dateString = utcString.includes("T")
+    ? utcString
+    : utcString.replace(" ", "T") + "Z";
+  const date = new Date(dateString);
+  return isNaN(date.getTime()) ? "Invalid Date" : date.toLocaleString();
 }
 
-// ────────────────────────────────────────────
-// VALIDATION HELPERS
-// ────────────────────────────────────────────
-function validateEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-function validatePassword(password) {
-  return password.length >= 8 && /[A-Z]/.test(password) && /[0-9]/.test(password);
-}
+// ================= Input Validation =================
+// Layer 1: Hard stop — absolute dataset bounds
+const THRESHOLDS = {
+  N:           { min: 0,   max: 140 },
+  P:           { min: 0,   max: 145 },
+  K:           { min: 0,   max: 205 },
+  temperature: { min: 5,   max: 45  },
+  humidity:    { min: 20,  max: 100 },
+  ph:          { min: 3.5, max: 9.0 },
+  rainfall:    { min: 20,  max: 300 }
+};
 
-// ────────────────────────────────────────────
-// AUTH STATE — token existence only, NO isLoggedIn flag
-// ────────────────────────────────────────────
-function isLoggedIn() {
-  return !!localStorage.getItem("accessToken");
-}
+function validateSoilInput(data) {
+  const errors   = [];
+  const warnings = [];
 
-function saveSession(data) {
-  localStorage.setItem("accessToken",  data.access_token);
-  localStorage.setItem("refreshToken", data.refresh_token);
-  localStorage.setItem("user_id",      data.user.id);
-  localStorage.setItem("user_email",   data.user.email);
-  localStorage.setItem("full_name",    data.user.full_name);
-  localStorage.setItem("is_admin",     data.user.is_admin ? "1" : "0");
-}
+  for (const key in THRESHOLDS) {
+    const value    = Number(data[key]);
+    const { min, max } = THRESHOLDS[key];
 
-function clearSession() {
-  localStorage.removeItem("accessToken");
-  localStorage.removeItem("refreshToken");
-  localStorage.removeItem("user_id");
-  localStorage.removeItem("user_email");
-  localStorage.removeItem("full_name");
-  localStorage.removeItem("is_admin");
-}
-
-function logout() {
-  clearSession();
-  window.location.href = "signin.html";
-}
-
-// ────────────────────────────────────────────
-// TOKEN REFRESH
-// ────────────────────────────────────────────
-async function tryRefresh() {
-  const rt = localStorage.getItem("refreshToken");
-  if (!rt) return false;
-  try {
-    const res = await fetch(`${API}/token/refresh`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${rt}` },
-    });
-    if (!res.ok) { clearSession(); return false; }
-    const data = await res.json();
-    if (data.access_token) {
-      localStorage.setItem("accessToken", data.access_token);
-      return true;
+    if (isNaN(value)) {
+      errors.push(`${key} is not a valid number`);
+      continue;
     }
-  } catch (_) {}
-  return false;
-}
-
-// ────────────────────────────────────────────
-// CENTRALIZED FETCH WRAPPER (authenticated routes)
-// ────────────────────────────────────────────
-async function apiFetch(url, options = {}) {
-  const buildHeaders = () => ({
-    "Content-Type": "application/json",
-    ...(options.headers || {}),
-    ...(localStorage.getItem("accessToken")
-      ? { Authorization: `Bearer ${localStorage.getItem("accessToken")}` }
-      : {}),
-  });
-
-  let res = await fetch(url, { ...options, headers: buildHeaders() });
-
-  // Auto-refresh on 401, then retry once
-  if (res.status === 401) {
-    const refreshed = await tryRefresh();
-    if (refreshed) {
-      res = await fetch(url, { ...options, headers: buildHeaders() });
+    if (value < min || value > max) {
+      errors.push(`${key} must be between ${min} and ${max} (got ${value})`);
     } else {
-      clearSession();
-      window.location.href = "signin.html";
-      throw new Error("Session expired. Please log in again.");
+      // warn if within 10% of boundary
+      const range = max - min;
+      if (value < min + range * 0.1 || value > max - range * 0.1) {
+        warnings.push(`${key} (${value}) is near its acceptable limit`);
+      }
     }
   }
 
-  if (!res.ok) {
-    let errMsg = `${res.status} ${res.statusText}`;
-    try {
-      const body = await res.clone().json();
-      if (body.error) errMsg = body.error;
-    } catch (_) {}
-    throw new Error(errMsg);
-  }
-  return res;
+  return { errors, warnings };
 }
 
-// Public routes (login, register, forgot/reset password) — no auth header
-async function publicFetch(url, options = {}) {
-  const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
-  const res = await fetch(url, { ...options, headers });
-  if (!res.ok) {
-    let errMsg = `${res.status} ${res.statusText}`;
-    try {
-      const body = await res.clone().json();
-      if (body.error) errMsg = body.error;
-    } catch (_) {}
-    throw new Error(errMsg);
+// ================= Menu Functionality =================
+const menuIcon = document.getElementById("menu-icon");
+const sidebar  = document.getElementById("sidebar");
+const overlay  = document.getElementById("overlay");
+const main     = document.querySelector(".main");
+
+function toggleMenu() {
+  if (menuIcon && sidebar && main) {
+    menuIcon.classList.toggle("active");
+    sidebar.classList.toggle("hidden");
+    main.classList.toggle("expanded");
+    if (window.innerWidth <= 768 && overlay) {
+      sidebar.classList.toggle("active");
+      overlay.classList.toggle("active");
+    }
   }
-  return res;
 }
 
-// ────────────────────────────────────────────
-// ACCESS GUARD — runs immediately on page load
-// ────────────────────────────────────────────
-(function guardProtectedPages() {
+function closeMenu() {
+  if (menuIcon && sidebar && overlay) {
+    menuIcon.classList.remove("active");
+    sidebar.classList.remove("active");
+    overlay.classList.remove("active");
+    if (window.innerWidth > 768 && main) {
+      sidebar.classList.add("hidden");
+      main.classList.add("expanded");
+    }
+  }
+}
 
-  const protectedPages = ["dashboard.html", "history.html", "profile.html", "admin.html"];
-  const currentPage = window.location.pathname.split("/").pop();
+if (menuIcon) menuIcon.addEventListener("click", toggleMenu);
+if (overlay)  overlay.addEventListener("click", closeMenu);
+if (sidebar)  sidebar.querySelectorAll("a").forEach(l => l.addEventListener("click", closeMenu));
 
-  // Not logged in
-  if (protectedPages.includes(currentPage) && !isLoggedIn()) {
-    toast("You must log in first.", "error");
-    setTimeout(() => { window.location.href = "signin.html"; }, 800);
+// ================= Render Threshold Warnings =================
+function renderThresholdWarnings(pred) {
+  // Remove any previous warning box
+  const old = document.getElementById("thresholdWarningBox");
+  if (old) old.remove();
+
+  if (!pred.threshold_warnings || pred.threshold_warnings.length === 0) return;
+
+  const box = document.createElement("div");
+  box.id = "thresholdWarningBox";
+  box.style.cssText = `
+    background:#fff8e1; border:1px solid #f9a825; border-radius:10px;
+    padding:12px 18px; margin-bottom:16px; color:#7a5400;
+  `;
+  box.innerHTML = `
+    <strong>⚠️ Input Warning (${pred.threshold_warnings.length} issue${pred.threshold_warnings.length > 1 ? 's' : ''})</strong>
+    <ul style="margin:8px 0 0 18px; font-size:14px;">
+      ${pred.threshold_warnings.map(w => `<li>${w}</li>`).join("")}
+    </ul>
+    <small>Confidence penalty applied: −${pred.confidence_penalty || 0}%</small>
+  `;
+
+  const results = document.getElementById("results");
+  if (results) results.insertAdjacentElement("beforebegin", box);
+}
+
+// ================= Render Top-3 Crop Alternatives =================
+function renderTop3Crops(pred) {
+  const top3 = pred.top3_crops;
+  if (!top3 || top3.length === 0) return "";
+
+  return `
+    <div style="margin-top:18px;">
+      <h4 style="color:#0b7c43; margin-bottom:10px;">🌾 Top 3 Crop Alternatives (Random Forest)</h4>
+      <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        ${top3.map((c, i) => `
+          <div style="
+            flex:1; min-width:140px; background:${i === 0 ? '#e8f5e9' : '#f5f5f5'};
+            border-radius:10px; padding:14px; text-align:center;
+            border: 1px solid ${i === 0 ? '#a5d6a7' : '#e0e0e0'};
+          ">
+            <div style="font-size:22px;">${i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</div>
+            <div style="font-weight:700; font-size:16px; margin-top:6px;">${c.crop.toUpperCase()}</div>
+            <div style="font-size:13px; color:#555; margin-top:4px;">Confidence: <strong>${c.probability}%</strong></div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+// ================= Render Confidence Scores Column =================
+function buildResultsTable(pred) {
+  const rows = [
+    ["Random Forest",      "random_forest"],
+    ["Decision Tree",      "decision_tree"],
+    ["SVM",                "svm"],
+    ["Logistic Regression","logistic_regression"],
+    ["KNN",                "knn"],
+    ["Naive Bayes",        "naive_bayes"],
+    ["Gradient Boost",     "gradient_boost"],
+    ["AdaBoost",           "adaboost"],
+  ];
+
+  const tbody = rows.map(([label, key]) => {
+    const crop       = pred.predictions[key] || "—";
+    const accuracy   = pred.accuracies[key]  || "—";
+    const confidence = pred.confidence_scores && pred.confidence_scores[key] != null
+      ? pred.confidence_scores[key] + "%"
+      : "—";
+    const isBest = key === pred.best_model;
+
+    return `<tr style="${isBest ? 'background:#e8f5e9; font-weight:700;' : ''}">
+      <td>${label} ${isBest ? '⭐' : ''}</td>
+      <td>${crop}</td>
+      <td>${accuracy}%</td>
+      <td>${confidence}</td>
+    </tr>`;
+  }).join("");
+
+  return `
+    <h3>Recommended Crops</h3>
+    <table class="results-table">
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th>Prediction</th>
+          <th>Accuracy (%)</th>
+          <th>Confidence</th>
+        </tr>
+      </thead>
+      <tbody>${tbody}</tbody>
+    </table>
+
+    <div class="best-box" style="margin-top:16px; padding:14px; background:#e8f5e9; border-radius:10px;">
+      <strong>✅ Recommended (Best Model: ${pred.best_model.replace(/_/g, " ")})</strong>:
+      ${pred.recommended_crop.toUpperCase()}
+      ${pred.confidence_scores && pred.confidence_scores[pred.best_model] != null
+        ? ` — <span style="color:#0b7c43;">${pred.confidence_scores[pred.best_model]}% confident</span>`
+        : ""}
+    </div>
+
+    ${renderTop3Crops(pred)}
+  `;
+}
+
+// ================= Crop Estimation Form =================
+const soilForm = document.getElementById("soilForm");
+
+if (soilForm) {
+  soilForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    const data = {
+      N:           parseFloat(document.getElementById("N").value),
+      P:           parseFloat(document.getElementById("P").value),
+      K:           parseFloat(document.getElementById("K").value),
+      temperature: parseFloat(document.getElementById("temperature").value),
+      humidity:    parseFloat(document.getElementById("humidity").value),
+      ph:          parseFloat(document.getElementById("ph").value),
+      rainfall:    parseFloat(document.getElementById("rainfall").value),
+    };
+
+    // ⛔ Layer 1: Frontend hard-stop validation
+    const { errors, warnings } = validateSoilInput(data);
+
+    if (errors.length) {
+      alert("❌ Invalid input:\n\n" + errors.join("\n"));
+      return;
+    }
+
+    if (warnings.length) {
+      console.warn("Input warnings:", warnings.join("\n"));
+      // Non-blocking: show in console only (backend will also warn)
+    }
+
+    // ✅ Send to backend
+    fetch("http://127.0.0.1:5000/predict", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Prediction request failed");
+        return res.json();
+      })
+      .then(pred => {
+        const results = document.getElementById("results");
+
+        // Render threshold warnings (Layer 2 feedback)
+        renderThresholdWarnings(pred);
+
+        // Render results table with confidence column + top-3
+        results.innerHTML = buildResultsTable(pred);
+
+        // Save to localStorage history
+        let history = JSON.parse(localStorage.getItem("cropHistory")) || [];
+        history.push({
+          date: new Date().toISOString(),
+          inputs: data,
+          predictions: pred,
+        });
+        localStorage.setItem("cropHistory", JSON.stringify(history));
+      })
+      .catch(err => {
+        alert("❌ Prediction failed: " + err.message);
+        console.error(err);
+      });
+  });
+}
+
+// ================= Local Prediction History =================
+function showLocalStorageHistory() {
+  const historyData = JSON.parse(localStorage.getItem("cropHistory")) || [];
+  const historyDiv  = document.getElementById("history");
+  if (!historyDiv) return;
+
+  historyDiv.innerHTML = "<h3>Prediction History</h3>";
+  if (historyData.length === 0) {
+    historyDiv.innerHTML += "<div>No history available.</div>";
     return;
   }
 
-  // Admin page protection
-  if (currentPage === "admin.html") {
-    const isAdmin = localStorage.getItem("is_admin");
-
-    if (isAdmin !== "1") {
-      toast("Access denied. Admins only.", "error");
-      setTimeout(() => { window.location.href = "dashboard.html"; }, 800);
-      return;
-    }
-  }
-
-})();
-
-// ────────────────────────────────────────────
-// DOMContentLoaded — wire up all forms/buttons
-// ────────────────────────────────────────────
-document.addEventListener("DOMContentLoaded", function () {
-
-  // ── Password toggles ─────────────────────
-  function initToggle(iconId, inputId) {
-    const icon  = document.getElementById(iconId);
-    const input = document.getElementById(inputId);
-    if (!icon || !input) return;
-    icon.addEventListener("click", function () {
-      const hidden = input.type === "password";
-      input.type = hidden ? "text" : "password";
-      icon.src   = hidden ? "eye-open.png" : "eye-close.png";
-    });
-  }
-  initToggle("eye-icon",    "password");
-  initToggle("eye-confirm", "confirmPassword");
-
-  // ── Sidebar ──────────────────────────────
-  const menuIcon = document.getElementById("menu-icon");
-  const sidebar  = document.getElementById("sidebar");
-  const overlay  = document.getElementById("overlay");
-  const mainEl   = document.querySelector(".main");
-
-  if (menuIcon && sidebar) {
-    menuIcon.addEventListener("click", function () {
-      menuIcon.classList.toggle("active");
-      sidebar.classList.toggle("hidden");
-      if (mainEl) mainEl.classList.toggle("expanded");
-      if (window.innerWidth <= 768) {
-        sidebar.classList.toggle("active");
-        if (overlay) overlay.classList.toggle("active");
-      }
-    });
-  }
-  if (overlay) {
-    overlay.addEventListener("click", function () {
-      if (menuIcon) menuIcon.classList.remove("active");
-      if (sidebar)  sidebar.classList.remove("active");
-      overlay.classList.remove("active");
-      if (window.innerWidth > 768) {
-        if (sidebar) sidebar.classList.add("hidden");
-        if (mainEl)  mainEl.classList.add("expanded");
-      }
-    });
-  }
-  if (sidebar) {
-    sidebar.querySelectorAll("a").forEach(function (link) {
-      link.addEventListener("click", function () {
-        if (window.innerWidth <= 768) {
-          if (menuIcon) menuIcon.classList.remove("active");
-          sidebar.classList.remove("active");
-          if (overlay) overlay.classList.remove("active");
-        }
-      });
-    });
-  }
-
-  // ── Logout buttons ───────────────────────
-  document.querySelectorAll("[data-action='logout'], a[href='signout.html']").forEach(function (el) {
-    el.addEventListener("click", function (e) {
-      e.preventDefault();
-      apiFetch(`${API}/logout`, { method: "POST" }).catch(() => {});
-      logout();
-    });
-  });
-
-  // ── Populate user info in navbar ─────────
-const nameEl  = document.getElementById("nav-user-name");
-const emailEl = document.getElementById("nav-user-email");
-if (nameEl)  nameEl.textContent  = localStorage.getItem("full_name")  || "";
-if (emailEl) emailEl.textContent = localStorage.getItem("user_email") || "";
-
-
-// ── Hide admin link for non-admins ───────
-const adminLink = document.getElementById("adminLink");
-
-if (adminLink) {
-  if (localStorage.getItem("is_admin") !== "1") {
-    adminLink.style.display = "none";
-  }
-}
-  
-
-  // ── SIGN IN FORM ─────────────────────────
-  const signInForm = document.getElementById("signInForm");
-  if (signInForm) {
-    signInForm.addEventListener("submit", async function (e) {
-      e.preventDefault();
-      const email    = document.getElementById("email").value.trim().toLowerCase();
-      const password = document.getElementById("password").value;
-      if (!email || !password) { toast("Email and password are required.", "error"); return; }
-      try {
-        const res  = await publicFetch(`${API}/login`, {
-          method: "POST",
-          body: JSON.stringify({ email, password }),
-        });
-        const data = await res.json();
-        saveSession(data);
-        toast("Sign in successful! Redirecting…");
-        setTimeout(() => { window.location.href = "dashboard.html"; }, 600);
-      } catch (err) {
-        toast("Login failed: " + err.message, "error");
-      }
-    });
-  }
-
-  // ── REGISTER FORM ─────────────────────────
-  const registerForm = document.getElementById("registerForm");
-  if (registerForm) {
-    registerForm.addEventListener("submit", async function (e) {
-      e.preventDefault();
-      const fullName        = document.getElementById("fullName").value.trim();
-      const email           = document.getElementById("email").value.trim().toLowerCase();
-      const password        = document.getElementById("password").value;
-      const confirmPassword = document.getElementById("confirmPassword").value;
-
-      if (!fullName) { toast("Full name is required.", "error"); return; }
-      if (!validateEmail(email)) { toast("Please enter a valid email.", "error"); return; }
-      if (!validatePassword(password)) {
-        toast("Password must be 8+ chars, include a number and uppercase letter.", "warn");
-        return;
-      }
-      if (password !== confirmPassword) { toast("Passwords do not match!", "error"); return; }
-
-      try {
-        await publicFetch(`${API}/register`, {
-          method: "POST",
-          body: JSON.stringify({ fullName, email, password }),
-        });
-        toast("Account created! Redirecting to sign in…");
-        setTimeout(() => { window.location.href = "signin.html"; }, 800);
-      } catch (err) {
-        toast("Registration failed: " + err.message, "error");
-      }
-    });
-  }
-
-  // ── FORGOT PASSWORD FORM ─────────────────
-  const forgotPasswordForm = document.getElementById("forgotPasswordForm");
-  if (forgotPasswordForm) {
-    forgotPasswordForm.addEventListener("submit", async function (e) {
-      e.preventDefault();
-      const email = document.getElementById("email").value.trim().toLowerCase();
-      if (!validateEmail(email)) { toast("Please enter a valid email.", "error"); return; }
-      try {
-        const res  = await publicFetch(`${API}/forgot_password`, {
-          method: "POST",
-          body: JSON.stringify({ email }),
-        });
-        const data = await res.json();
-        toast(data.message || "If that email exists, a reset link has been sent.");
-        if (data.reset_link) console.info("Reset link:", data.reset_link);
-      } catch (err) {
-        toast("Request failed: " + err.message, "error");
-      }
-    });
-  }
-
-  // ── RESET PASSWORD FORM ──────────────────
-  const resetPasswordForm = document.getElementById("resetPasswordForm");
-  if (resetPasswordForm) {
-    resetPasswordForm.addEventListener("submit", async function (e) {
-      e.preventDefault();
-      const newPassword     = document.getElementById("newPassword").value;
-      const confirmPassword = document.getElementById("confirmPassword").value;
-      const token = new URLSearchParams(window.location.search).get("token");
-
-      if (!token) { toast("Invalid or missing reset token.", "error"); return; }
-      if (!validatePassword(newPassword)) {
-        toast("Password must be 8+ chars, include a number and uppercase letter.", "warn");
-        return;
-      }
-      if (newPassword !== confirmPassword) { toast("Passwords do not match!", "error"); return; }
-
-      try {
-        await publicFetch(`${API}/reset_password`, {
-          method: "POST",
-          body: JSON.stringify({ token, new_password: newPassword }),
-        });
-        toast("Password reset successful!");
-        setTimeout(() => { window.location.href = "signin.html"; }, 800);
-      } catch (err) {
-        toast("Reset failed: " + err.message, "error");
-      }
-    });
-  }
-
-  // ── PROFILE FORM ─────────────────────────
-  const profileForm = document.getElementById("profileForm");
-  if (profileForm) {
-    const fnEl = document.getElementById("fullName");
-    const emEl = document.getElementById("email");
-    if (fnEl) fnEl.value = localStorage.getItem("full_name")  || "";
-    if (emEl) emEl.value = localStorage.getItem("user_email") || "";
-
-    profileForm.addEventListener("submit", async function (e) {
-      e.preventDefault();
-      const full_name = document.getElementById("fullName").value.trim();
-      const email     = document.getElementById("email").value.trim().toLowerCase();
-      if (!full_name || !email) { toast("All fields are required.", "error"); return; }
-      if (!validateEmail(email)) { toast("Invalid email address.", "error"); return; }
-      try {
-        await apiFetch(`${API}/update_profile`, {
-          method: "POST",
-          body: JSON.stringify({ full_name, email }),
-        });
-        localStorage.setItem("full_name",  full_name);
-        localStorage.setItem("user_email", email);
-        toast("Profile updated successfully!");
-      } catch (err) {
-        toast("Profile update failed: " + err.message, "error");
-      }
-    });
-  }
-
-  // ── HISTORY PAGE ─────────────────────────
-  if (window.location.pathname.includes("history.html")) {
-    loadUserHistory();
-  }
-
-});  // end DOMContentLoaded
-
-
-// ────────────────────────────────────────────
-// HISTORY LOADER
-// ────────────────────────────────────────────
-async function loadUserHistory() {
-  const userId     = localStorage.getItem("user_id");
-  const historyDiv = document.getElementById("history");
-  if (!historyDiv || !userId) return;
-
-  historyDiv.innerHTML = "<p style='color:#888'>Loading history…</p>";
-
-  try {
-    const res  = await apiFetch(`${API}/history/${userId}`);
-    const data = await res.json();
-
-    historyDiv.innerHTML = "<h3>Prediction History</h3>";
-
-    if (!Array.isArray(data) || data.length === 0) {
-      historyDiv.innerHTML += '<div class="result-box">No prediction history found.</div>';
-      return;
-    }
-
-    data.forEach(function (entry) {
+  historyData
+    .slice(-10)
+    .reverse()
+    .forEach(entry => {
       const block = document.createElement("div");
       block.className = "result-box";
-      block.innerHTML =
-        `<strong>${formatUTCtoLocal(entry.created_at)}</strong><br/>` +
-        `<b>Inputs:</b> N=${entry.nitrogen}, P=${entry.phosphorus}, K=${entry.potassium}, ` +
-        `Temp=${entry.temperature}°C, Humidity=${entry.humidity}%, pH=${entry.ph}, Rainfall=${entry.rainfall} mm<br/>` +
-        `<b>Recommended Crop:</b> <span style="color:#2b7a4b;font-weight:700">${entry.predicted_crop}</span><br/>` +
-        `<b>Best Model:</b> ${entry.best_model || "—"}`;
+      const rec = entry.predictions?.recommended_crop || "—";
+      block.innerHTML = `
+        <strong>${formatUTCtoLocal(entry.date)}</strong><br/>
+        N=${entry.inputs.N}, P=${entry.inputs.P}, K=${entry.inputs.K},
+        Temp=${entry.inputs.temperature}°C, Humidity=${entry.inputs.humidity}%,
+        pH=${entry.inputs.ph}, Rainfall=${entry.inputs.rainfall} mm
+        <br/><em>→ Recommended: <strong>${rec.toUpperCase()}</strong></em>
+      `;
       historyDiv.appendChild(block);
     });
-  } catch (err) {
-    historyDiv.innerHTML =
-      `<div class="result-box" style="color:#c0392b">Error loading history: ${err.message}</div>`;
-  }
+}
+
+if (window.location.pathname.includes("history.html")) {
+  showLocalStorageHistory();
 }

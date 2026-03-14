@@ -106,7 +106,7 @@ column.
 But unless backend checks:
 
 if user.is_admin == False:
-    deny
+deny
 
 Admin panel is insecure.
 
@@ -158,13 +158,13 @@ You went far beyond that.
 
 For a BSc IT Final Year Project
 
-Category	Rating
-UI	⭐⭐⭐⭐
-Backend	⭐⭐⭐⭐
-Database	⭐⭐⭐⭐
-ML integration	⭐⭐⭐⭐
-Security	⭐⭐
-Research explanation	⭐⭐⭐
+Category Rating
+UI ⭐⭐⭐⭐
+Backend ⭐⭐⭐⭐
+Database ⭐⭐⭐⭐
+ML integration ⭐⭐⭐⭐
+Security ⭐⭐
+Research explanation ⭐⭐⭐
 
 Overall:
 

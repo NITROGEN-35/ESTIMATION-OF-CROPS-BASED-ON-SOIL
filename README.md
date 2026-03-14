@@ -1,71 +1,316 @@
-"# ESTIMATION-OF-CROPS-BASED-ON-SOIL"
+# 🌱 Estimation of Crops Based on Soil Parameters
 
-## Testing 🧪
+> A machine learning web application that recommends the most suitable crop to grow based on soil nutrient values, climate parameters, and environmental conditions.
 
-This project uses **pytest** for unit & endpoint tests and **pytest-cov** for coverage reports. Two complementary approaches are applied:
+---
 
-1. **Black‑box testing** – exercise the Flask API via the `client` fixture. The existing tests in `backend/tests` call each route with valid/invalid data and assert on status codes and JSON bodies.
-2. **White‑box testing** – import and call internal functions directly so you can hit every branch, loop and error path. For example, `calculate_soil_score` has separate branches for pH, temperature and NPK ranges, and `predict_crop` handles tie‑breaking logic.
+## 📌 Project Overview
 
-### Running tests
+This project uses **8 machine learning classification models** to predict the best crop for a given set of soil and climate inputs. The system compares all model predictions, shows accuracy metrics, and recommends the crop suggested by the highest-accuracy model.
+
+Built as a research and practical agriculture tool, it features a clean dashboard UI, prediction history, model comparison charts, and input validation with threshold warnings.
+
+---
+
+## 🖥️ Screenshots
+
+| Landing Page                        | Dashboard                               | Prediction Results                  |
+| ----------------------------------- | --------------------------------------- | ----------------------------------- |
+| ![Landing](screenshots/landing.png) | ![Dashboard](screenshots/dashboard.png) | ![Results](screenshots/results.png) |
+
+> _(Add your own screenshots to a `/screenshots` folder in the repo)_
+
+---
+
+## 🧰 Tech Stack
+
+| Layer                | Technology                        |
+| -------------------- | --------------------------------- |
+| **Frontend**         | HTML5, CSS3, JavaScript (Vanilla) |
+| **Charts**           | Chart.js                          |
+| **Backend**          | Python, Flask, Flask-CORS         |
+| **Machine Learning** | scikit-learn                      |
+| **Database**         | MySQL (crop_system.sql)           |
+| **Icons**            | Font Awesome, Boxicons            |
+| **Fonts**            | Google Fonts (Inter)              |
+
+---
+
+## 🤖 Machine Learning Models Used
+
+| Model                        | Description                                             |
+| ---------------------------- | ------------------------------------------------------- |
+| Random Forest                | Ensemble of decision trees — typically highest accuracy |
+| Decision Tree                | Single tree, fast and interpretable                     |
+| Support Vector Machine (SVM) | Finds optimal hyperplane boundary                       |
+| Logistic Regression          | Probabilistic linear classifier                         |
+| Naive Bayes                  | Probabilistic model using Bayes' theorem                |
+| K-Nearest Neighbors (KNN)    | Classifies based on closest training samples            |
+| Gradient Boosting            | Sequential boosting for high accuracy                   |
+| AdaBoost                     | Adaptive boosting — reduces bias iteratively            |
+
+All models are trained on an 80/20 train-test split with **StandardScaler** normalization.
+
+---
+
+## 📊 Dataset
+
+**File:** `Crop_recommendation.csv`
+
+**Source:** [Kaggle — Crop Recommendation Dataset](https://www.kaggle.com/datasets/atharvaingle/crop-recommendation-dataset)
+
+### Features (Input Columns)
+
+| Feature       | Unit  | Description                |
+| ------------- | ----- | -------------------------- |
+| `N`           | kg/ha | Nitrogen content in soil   |
+| `P`           | kg/ha | Phosphorus content in soil |
+| `K`           | kg/ha | Potassium content in soil  |
+| `temperature` | °C    | Average temperature        |
+| `humidity`    | %     | Relative humidity          |
+| `ph`          | —     | Soil pH value              |
+| `rainfall`    | mm    | Annual rainfall            |
+
+### Target Column
+
+| Column  | Type   | Description                                         |
+| ------- | ------ | --------------------------------------------------- |
+| `label` | string | Crop name (22 classes: rice, maize, chickpea, etc.) |
+
+### Dataset Statistics
+
+- **Rows:** 2,200 samples
+- **Classes:** 22 crop types
+- **Balance:** 100 samples per crop (balanced dataset)
+
+---
+
+## 🏗️ System Architecture
+
+```
+User Browser
+     │
+     ▼
+ dashboard.html  ──── style.css
+     │
+     ├── script.js   (form, validation, localStorage history)
+     └── chart.js    (Chart.js rendering, fetch to backend)
+          │
+          ▼
+   Flask API (app.py)  :5000
+          │
+          ├── /predict   POST  → returns predictions + accuracies
+          └── /          GET   → health check
+               │
+               ▼
+    scikit-learn Models
+    (Random Forest, SVM, etc.)
+               │
+               ▼
+    Crop_recommendation.csv
+```
+
+---
+
+## ✅ Input Validation System
+
+The app enforces **two-layer validation**:
+
+### Layer 1 — Frontend (script.js)
+
+Hard stops the request if values are outside absolute dataset bounds:
+
+| Parameter   | Min | Max |
+| ----------- | --- | --- |
+| N           | 0   | 140 |
+| P           | 0   | 145 |
+| K           | 0   | 205 |
+| Temperature | 5   | 45  |
+| Humidity    | 20  | 100 |
+| pH          | 3.5 | 9.0 |
+| Rainfall    | 20  | 300 |
+
+### Layer 2 — Backend (app.py)
+
+Warns if values are outside the comfortable agronomic range and applies a confidence penalty:
+
+| Parameter   | Min | Max |
+| ----------- | --- | --- |
+| N           | 15  | 150 |
+| P           | 30  | 80  |
+| K           | 15  | 120 |
+| Temperature | 10  | 35  |
+| Humidity    | 30  | 90  |
+| pH          | 5.0 | 8.0 |
+| Rainfall    | 20  | 300 |
+
+---
+
+## 🔌 API Reference
+
+### `POST /predict`
+
+**Request Body (JSON):**
+
+```json
+{
+  "N": 90,
+  "P": 42,
+  "K": 43,
+  "temperature": 20.8,
+  "humidity": 82.0,
+  "ph": 6.5,
+  "rainfall": 202.9
+}
+```
+
+**Response (JSON):**
+
+```json
+{
+  "predictions": {
+    "random_forest": "rice",
+    "decision_tree": "rice",
+    "svm": "rice",
+    "logistic_regression": "rice",
+    "naive_bayes": "rice",
+    "knn": "rice",
+    "gradient_boost": "rice",
+    "adaboost": "rice"
+  },
+  "accuracies": {
+    "random_forest": 99.32,
+    "decision_tree": 98.18,
+    ...
+  },
+  "best_model": "random_forest",
+  "recommended_crop": "rice",
+  "threshold_status": "ok",
+  "threshold_warnings": [],
+  "confidence_penalty": 0
+}
+```
+
+---
+
+## 🚀 Installation & Setup
+
+### Prerequisites
+
+- Python 3.8+
+- pip
+- MySQL (optional, for persistent history)
+- A modern web browser
+
+### 1. Clone the Repository
 
 ```bash
-# from project root; make sure virtualenv is activated
-cd backend
-PYTHONPATH=. python -m pytest --cov=backend --cov-report=term-missing
+git clone https://github.com/NITROGEN-35/ESTIMATION-OF-CROPS-BASED-ON-SOIL.git
+cd ESTIMATION-OF-CROPS-BASED-ON-SOIL
 ```
 
-The `--cov-report=term-missing` flag prints out which lines were not executed. You can also generate an HTML report:
+### 2. Install Python Dependencies
 
 ```bash
-python -m pytest --cov=backend --cov-report=html
-# open backend/htmlcov/index.html in a browser
+pip install flask flask-cors scikit-learn pandas numpy
 ```
 
-A fresh test file (`backend/tests/test_app_logic.py`) demonstrates the structure of thorough black/white‑box tests along with database mocking and parameterized checks.
+### 3. Add the Dataset
 
-#### Module testing
+Place `Crop_recommendation.csv` in the project root directory.
+Download from: https://www.kaggle.com/datasets/atharvaingle/crop-recommendation-dataset
 
-`test_app_logic.py` and the other Python unit tests are essentially _module tests_ – they import functions and classes from your backend modules (`app.py`, `ml_core.py`, etc.) and call them directly. Whenever you write a new helper or refactor logic, add a corresponding unit test that exercises its edge cases. This is the classic white‑box testing style and ensures that every line of code inside your modules is executed by the test suite.
+### 4. Start the Backend
 
-#### GUI / frontend testing
-
-The repository also contains several static web pages (`indexl.html`, `dashboard.html`, `admin.html`, etc.). To validate the user interface, you can use a browser automation toolkit such as **Selenium** or **Playwright**.
-
-Below is a minimal Selenium example – save it as `backend/tests/test_gui.py` and run it with `pytest` after installing the `selenium` package and a webdriver (ChromeDriver, geckodriver, etc.).
-
-```python
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-import pytest
-
-@pytest.fixture(scope="module")
-def driver():
-    d = webdriver.Chrome()  # ensure chromedriver is on your PATH
-    yield d
-    d.quit()
-
-
-def test_homepage_loads(driver):
-    # point at the file or, if you prefer, start the flask server and use http://localhost:5000
-    driver.get("file:///" + __file__.rpartition("/")[0] + "/../indexl.html")
-    assert "Crop Estimator" in driver.title
-    assert driver.find_element(By.NAME, "N")
+```bash
+python app.py
 ```
 
-You can expand this script to fill out forms, click buttons, and verify that the UI behaves correctly. For full end‑to‑end tests, start the Flask backend in a subprocess and have the browser visit `http://127.0.0.1:5000`.
+Or on Windows:
 
-### Writing more tests
+```bash
+start_backend.bat
+```
 
-- Add tests for each new function you create.
-- Use `monkeypatch` to stub `get_db_connection`, `get_current_user`, or any external dependency.
-- Parametrize inputs to exercise boundary values and error messages.
-- Ensure you hit each `if`/`elif`/`except` block – coverage tools will show missing branches.
+The Flask server will start at: `http://127.0.0.1:5000`
 
-### Tools
+### 5. Open the Frontend
 
-- `pytest-cov`: coverage measurement
-- `black`, `flake8` (optional): enforce styling/quality
-- `bandit` (optional): static security analysis
+Open `dashboard.html` directly in your browser, or serve via Live Server (VS Code extension).
 
-By combining these techniques you can drive line‑coverage up to 100 % and satisfy both black‑box (API) and white‑box (code‑aware) testing requirements.
+### 6. (Optional) Set Up MySQL Database
+
+```bash
+mysql -u root -p < crop_system.sql
+```
+
+---
+
+## 📁 Project Structure
+
+```
+ESTIMATION-OF-CROPS-BASED-ON-SOIL/
+│
+├── app.py                   # Flask backend + ML models
+├── dashboard.html           # Main prediction dashboard
+├── history.html             # Prediction history page
+├── indexl.html              # Landing page
+├── script.js                # Form handling, validation, history
+├── chart.js                 # Chart rendering, API calls
+├── style.css                # All styling
+├── crop_system.sql          # MySQL schema
+├── start_backend.bat        # Windows batch launcher
+├── Crop_recommendation.csv  # Dataset (add manually)
+└── README.md
+```
+
+---
+
+## 📈 Model Performance (Typical)
+
+| Model               | Accuracy |
+| ------------------- | -------- |
+| Random Forest       | ~99%     |
+| Gradient Boosting   | ~98%     |
+| Decision Tree       | ~98%     |
+| SVM                 | ~97%     |
+| KNN                 | ~97%     |
+| Naive Bayes         | ~99%     |
+| Logistic Regression | ~95%     |
+| AdaBoost            | ~93%     |
+
+_Exact values depend on the random state and train/test split._
+
+---
+
+## 🌾 Supported Crops (22 Classes)
+
+`rice` · `maize` · `chickpea` · `kidneybeans` · `pigeonpeas` · `mothbeans` · `mungbean` · `blackgram` · `lentil` · `pomegranate` · `banana` · `mango` · `grapes` · `watermelon` · `muskmelon` · `apple` · `orange` · `papaya` · `coconut` · `cotton` · `jute` · `coffee`
+
+---
+
+## 🔒 Security Notes
+
+- Frontend input validation blocks requests outside dataset bounds
+- Backend threshold validation adds a confidence penalty for edge-case inputs
+- No sensitive credentials are hardcoded in source files
+- MySQL passwords should be stored in environment variables in production
+
+---
+
+## 🙋 Author
+
+**Sanyam Kushwaha**
+GitHub: [@NITROGEN-35](https://github.com/NITROGEN-35)
+
+---
+
+## 📄 License
+
+This project is for academic and research purposes.
+
+---
+
+## 🏷️ Tags
+
+`machine-learning` `crop-recommendation` `agriculture` `flask` `scikit-learn` `random-forest` `soil-analysis` `python` `javascript` `chart.js`
